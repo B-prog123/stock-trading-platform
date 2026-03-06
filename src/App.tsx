@@ -1,0 +1,348 @@
+import React, { useState, useEffect, createContext, useContext } from 'react';
+import { User } from './types';
+import Sidebar from './components/Sidebar';
+import Navbar from './components/Navbar';
+import MobileNav from './components/MobileNav';
+import Dashboard from './pages/Dashboard';
+import Market from './pages/Market';
+import Portfolio from './pages/Portfolio';
+import Watchlist from './pages/Watchlist';
+import Transactions from './pages/Transactions';
+import ProfileSettings from './pages/ProfileSettings';
+import Preferences from './pages/Preferences';
+import MarketNewsPage from './pages/MarketNewsPage';
+import HowToUse from './pages/HowToUse';
+import Funds from './pages/Funds';
+import SIP from './pages/SIP';
+import Onboarding from './pages/Onboarding';
+import AIChatbot from './components/AIChatbot';
+import Auth from './pages/Auth';
+import { motion, AnimatePresence } from 'motion/react';
+import { X } from 'lucide-react';
+import { apiUrl } from './lib/api';
+
+export interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  date: Date;
+  read: boolean;
+}
+
+interface AuthContextType {
+  user: User | null;
+  token: string | null;
+  login: (token: string, user: User) => void;
+  logout: () => void;
+  refreshUser: () => Promise<void>;
+  deposit: (amount: number) => Promise<void>;
+  theme: 'light' | 'dark';
+  toggleTheme: () => void;
+  notifications: Notification[];
+  addNotification: (title: string, message: string, type?: 'info' | 'success' | 'warning' | 'error') => void;
+  clearNotifications: () => void;
+  activeTab: string;
+  setActiveTab: (tab: string) => void;
+  selectedSymbol: string | null;
+  setSelectedSymbol: (symbol: string | null) => void;
+}
+
+const AuthContext = createContext<AuthContextType | null>(null);
+
+export const useAuth = () => useContext(AuthContext)!;
+
+export default function App() {
+  const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const stored = localStorage.getItem('theme');
+    return (stored as 'light' | 'dark') || 'dark';
+  });
+  const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [toastNotifications, setToastNotifications] = useState<Notification[]>([]);
+  const [isAuthReady, setIsAuthReady] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showAppBrief, setShowAppBrief] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem('token');
+    const storedUser = localStorage.getItem('user');
+    const hasSeenOnboarding = localStorage.getItem('hasSeenOnboarding');
+
+    if (storedToken && storedUser) {
+      setToken(storedToken);
+      setUser(JSON.parse(storedUser));
+      if (!hasSeenOnboarding) {
+        setShowOnboarding(true);
+      }
+    }
+    setIsAuthReady(true);
+  }, []);
+
+  const completeOnboarding = () => {
+    setShowOnboarding(false);
+    localStorage.setItem('hasSeenOnboarding', 'true');
+  };
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const login = (newToken: string, newUser: User) => {
+    setToken(newToken);
+    setUser(newUser);
+    setShowAppBrief(true);
+    localStorage.setItem('token', newToken);
+    localStorage.setItem('user', JSON.stringify(newUser));
+
+    if (!localStorage.getItem('hasSeenOnboarding')) {
+      setShowOnboarding(true);
+    }
+  };
+
+  const logout = () => {
+    setToken(null);
+    setUser(null);
+    setShowAppBrief(false);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  };
+
+  const refreshUser = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(apiUrl('/api/user/profile'), {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.status === 401 || res.status === 403) {
+        logout();
+        return;
+      }
+      if (res.ok) {
+        const updatedUser = await res.json();
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+      }
+    } catch (err) {
+      console.error('Failed to refresh user', err);
+    }
+  };
+
+  const deposit = async (amount: number) => {
+    if (!token) return;
+    try {
+      const res = await fetch(apiUrl('/api/user/wallet/deposit'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ amount })
+      });
+      if (res.status === 401 || res.status === 403) {
+        logout();
+        return;
+      }
+      if (res.ok) {
+        await refreshUser();
+        addNotification('Deposit Successful', `$${amount.toLocaleString()} has been added to your balance.`, 'success');
+      } else {
+        const data = await res.json().catch(() => ({ error: 'Deposit failed' }));
+        addNotification('Deposit Failed', data.error || 'Failed to process deposit', 'error');
+      }
+    } catch (err) {
+      console.error('Deposit failed', err);
+      addNotification('Error', 'Network error during deposit', 'error');
+    }
+  };
+  const toggleTheme = () => {
+    setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
+  };
+
+  const addNotification = (
+    title: string,
+    message: string,
+    type: 'info' | 'success' | 'warning' | 'error' = 'info'
+  ) => {
+    const newNotif: Notification = {
+      id: Math.random().toString(36).substring(7),
+      title,
+      message,
+      type,
+      date: new Date(),
+      read: false,
+    };
+    setNotifications(prev => [newNotif, ...prev]);
+    setToastNotifications(prev => [newNotif, ...prev].slice(0, 4));
+
+    window.setTimeout(() => {
+      setToastNotifications(prev => prev.filter((n) => n.id !== newNotif.id));
+    }, 4500);
+  };
+
+  const clearNotifications = () => {
+    setNotifications([]);
+    setToastNotifications([]);
+  };
+
+  if (!isAuthReady) return null;
+
+  const providerValue: AuthContextType = {
+    user,
+    token,
+    login,
+    logout,
+    refreshUser,
+    deposit,
+    theme,
+    toggleTheme,
+    notifications,
+    addNotification,
+    clearNotifications,
+    activeTab,
+    setActiveTab,
+    selectedSymbol,
+    setSelectedSymbol,
+  };
+
+  if (!token) {
+    return (
+      <AuthContext.Provider value={providerValue}>
+        <Auth />
+      </AuthContext.Provider>
+    );
+  }
+
+  return (
+    <AuthContext.Provider value={providerValue}>
+      <div className="relative flex h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] font-sans overflow-hidden">
+        <div className="fixed top-24 right-4 md:right-8 z-[120] pointer-events-none">
+          <div className="space-y-3">
+            <AnimatePresence>
+              {toastNotifications.map((n) => (
+                <motion.div
+                  key={n.id}
+                  initial={{ opacity: 0, x: 20, y: -6 }}
+                  animate={{ opacity: 1, x: 0, y: 0 }}
+                  exit={{ opacity: 0, x: 20, y: -6 }}
+                  transition={{ duration: 0.2 }}
+                  className={`min-w-[260px] max-w-[340px] rounded-2xl border px-4 py-3 shadow-2xl backdrop-blur-md pointer-events-auto ${
+                    n.type === 'success'
+                      ? 'border-emerald-500/40 bg-emerald-500/15'
+                      : n.type === 'error'
+                        ? 'border-red-500/40 bg-red-500/15'
+                        : n.type === 'warning'
+                          ? 'border-amber-500/40 bg-amber-500/15'
+                          : 'border-cyan-500/40 bg-cyan-500/15'
+                  }`}
+                >
+                  <p className="text-xs font-bold text-[var(--text-primary)]">{n.title}</p>
+                  <p className="mt-1 text-[11px] leading-relaxed text-[var(--text-secondary)]">{n.message}</p>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        </div>
+        <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+          <div className="absolute -top-24 -left-24 h-80 w-80 rounded-full bg-emerald-500/10 blur-[110px] animate-float-slow" />
+          <div className="absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-cyan-500/10 blur-[110px] animate-float-reverse" />
+          <div className="absolute top-1/3 right-1/4 h-64 w-64 rounded-full bg-blue-500/10 blur-[100px] animate-pulse-soft" />
+          <div className="absolute inset-0 bg-ambient-grid opacity-25" />
+        </div>
+
+        <AnimatePresence>
+          {isSidebarOpen && (
+            <div className="fixed inset-0 z-[90]">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                onClick={() => setIsSidebarOpen(false)}
+              />
+              <div className="absolute left-0 top-0 h-full">
+                <Sidebar
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                  onClose={() => setIsSidebarOpen(false)}
+                />
+              </div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        <div className="flex-1 flex flex-col min-w-0 relative">
+          <Navbar onOpenSidebar={() => setIsSidebarOpen(true)} />
+
+          <main className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 lg:pb-8 relative scrollbar-hide">
+            {showAppBrief && (
+              <div className="mb-6 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 md:p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h2 className="text-sm md:text-base font-semibold text-emerald-300">About Stockify AI</h2>
+                    <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                      Stockify AI helps you track real-time market data, manage your portfolio, and make informed trades with built-in AI insights.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowAppBrief(false)}
+                    className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                    aria-label="Dismiss app description"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                {activeTab === 'dashboard' && <Dashboard />}
+                {activeTab === 'guide' && <HowToUse />}
+                {activeTab === 'market' && <Market />}
+                {activeTab === 'market-news' && <MarketNewsPage />}
+                {activeTab === 'funds' && <Funds />}
+                {activeTab === 'sip' && <SIP />}
+                {activeTab === 'portfolio' && <Portfolio />}
+                {activeTab === 'watchlist' && <Watchlist />}
+                {activeTab === 'transactions' && <Transactions />}
+                {activeTab === 'profile-settings' && <ProfileSettings />}
+                {activeTab === 'preferences' && <Preferences />}
+              </motion.div>
+            </AnimatePresence>
+
+            {showOnboarding && <Onboarding onComplete={completeOnboarding} />}
+            <AIChatbot />
+          </main>
+
+          <MobileNav activeTab={activeTab} setActiveTab={setActiveTab} />
+        </div>
+      </div>
+    </AuthContext.Provider>
+  );
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,5 @@
+{
+  "name": "Stockify",
+  "description": "A comprehensive full-stack stock trading platform with real-time market data, portfolio management, and secure authentication.",
+  "requestFramePermissions": []
+}
