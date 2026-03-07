@@ -254,7 +254,7 @@ export default function App() {
             <Watchlist />
           </div>
 
-          <main className="flex-1 overflow-y-auto bg-[var(--bg-primary)] p-4 md:p-8 pb-24 lg:pb-8 relative scrollbar-hide">
+          <main className="flex-1 max-w-full overflow-x-hidden overflow-y-auto bg-[var(--bg-primary)] p-4 md:p-8 pb-24 lg:pb-8 relative scrollbar-hide">
             {showAppBrief && (
               <div className="mb-6 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 md:p-5">
                 <div className="flex items-start justify-between gap-4">

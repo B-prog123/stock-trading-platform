@@ -83,7 +83,7 @@ export default function Dashboard() {
             <div className="p-4 border-b border-[var(--border-color)] bg-[var(--bg-tertiary)] flex items-center justify-between">
               <h3 className="font-semibold text-[var(--text-primary)]">Equity & Margin</h3>
             </div>
-            <div className="p-5 grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="p-5 grid grid-cols-2 lg:grid-cols-4 gap-4">
               <PanelMetric title="Available Margin" value={`$${(user?.balance || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`} />
               <PanelMetric title="Used Margin" value="$0.00" />
               <PanelMetric title="Opening Balance" value={`$${(user?.balance || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`} />
@@ -98,9 +98,9 @@ export default function Dashboard() {
               <h3 className="font-semibold text-[var(--text-primary)]">Holdings & P&L</h3>
             </div>
             <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-8 relative z-10">
-              <div>
+              <div className="min-w-0">
                 <p className="text-xs text-[var(--text-secondary)] uppercase tracking-widest font-bold mb-1">Total Portfolio Value</p>
-                <h2 className="text-3xl lg:text-4xl font-mono font-bold tracking-tighter text-[var(--text-primary)] md:truncate">
+                <h2 className="text-3xl lg:text-4xl font-mono font-bold tracking-tighter text-[var(--text-primary)] truncate">
                   ${metrics.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                 </h2>
               </div>
