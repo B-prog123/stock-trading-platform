@@ -72,7 +72,7 @@ export default function Navbar() {
           <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-blue-600 to-emerald-500 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:rotate-6 transition-transform">
             <TrendingUp size={18} className="text-white" strokeWidth={3} />
           </div>
-          <span className="text-xl sm:text-2xl font-black tracking-tighter bg-gradient-to-r from-blue-500 to-emerald-500 bg-clip-text text-transparent hidden xs:block">
+          <span className="text-xl sm:text-2xl font-black tracking-tighter bg-gradient-to-r from-blue-500 to-emerald-500 bg-clip-text text-transparent">
             STOCKIFY
           </span>
         </motion.div>

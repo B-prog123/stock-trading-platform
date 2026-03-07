@@ -152,8 +152,18 @@ export default function Dashboard() {
               alt="Stockify mobile app"
               className="h-[320px] lg:h-[380px] object-contain drop-shadow-2xl"
               initial={{ y: 60, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ type: 'spring', stiffness: 100, damping: 15, delay: 0.2 }}
+              animate={{
+                y: [0, -20, 0],
+                opacity: 1
+              }}
+              transition={{
+                y: {
+                  duration: 4,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                },
+                opacity: { duration: 0.5 }
+              }}
               style={{ filter: 'drop-shadow(0 32px 64px rgba(99,102,241,0.45))' }}
             />
           </div>
