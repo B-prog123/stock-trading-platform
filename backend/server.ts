@@ -1,13 +1,18 @@
-import express from "express";
+﻿import express from "express";
 import cors from "cors";
 import axios from "axios";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
 import mongoose, { Schema, Types } from "mongoose";
 import { GoogleGenAI } from "@google/genai";
 
-dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.resolve(__dirname, ".env") });
+dotenv.config({ path: path.resolve(__dirname, "../.env"), override: false });
 
 const app = express();
 const PORT = Number(process.env.PORT || 4000);
@@ -472,3 +477,5 @@ startServer().catch((error) => {
   console.error("Failed to start server:", error);
   process.exit(1);
 });
+
+

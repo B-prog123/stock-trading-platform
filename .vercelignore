@@ -1,6 +1,6 @@
 node_modules
-dist
-server.ts
-stockify.db
+frontend/dist
+backend
 *.zip
-devserver.log
+*.log
+stockify.db

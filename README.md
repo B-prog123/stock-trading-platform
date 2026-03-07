@@ -1,56 +1,43 @@
-# Stockify AI Deployment Guide
+# Stock Trading Platform
 
-Architecture:
-- Frontend: React + Vite (deploy to Vercel)
-- Backend: Node.js + Express API (deploy to Render or Railway)
-- Database: MongoDB Atlas
+## Project Structure
+
+stock-trading-platform
+- frontend
+  - package.json
+- backend
+  - server.js
+  - package.json
+- README.md
 
 ## Local Development
 
-1. Install dependencies:
+1. Install root tool dependency (for running both services together):
 `npm install`
 
-2. Create `.env` from `.env.example` and set values.
+2. Install frontend and backend dependencies:
+`npm install --prefix frontend`
+`npm install --prefix backend`
 
-3. Run frontend:
-`npm run dev`
+3. Create backend env file:
+`Copy-Item backend/.env.example backend/.env`
 
-4. Run backend (separate terminal):
-`npm run dev:backend`
+4. Update `backend/.env` values (`MONGODB_URI`, `JWT_SECRET`, `GEMINI_API_KEY`, `FRONTEND_URL`, `PORT`).
 
-Frontend runs on Vite default port (`5173`).
-Backend runs on `PORT` (default `4000`).
+5. Run frontend:
+`npm run dev --prefix frontend`
 
-## Frontend Deploy (Vercel)
+6. Run backend:
+`npm run dev --prefix backend`
 
-1. Import this repo in Vercel.
-2. Framework preset: `Vite`.
-3. Build command: `npm run build`
-4. Output directory: `dist`
-5. Set env var in Vercel:
-   - `VITE_API_BASE_URL=https://<your-backend-domain>`
+Frontend: `http://localhost:5173`
+Backend health: `http://localhost:4000/api/health`
 
-## Backend Deploy (Render / Railway)
+## Deploy
 
-Start command:
-`npm run dev:backend` (for dev environments) or `npm start` (recommended prod)
+- Frontend: deploy to Vercel from this repo using:
+  - Build command: `npm run build --prefix frontend`
+  - Output directory: `frontend/dist`
+  - Env var: `VITE_API_BASE_URL=https://<your-backend-domain>`
 
-Set backend env vars:
-- `MONGODB_URI`
-- `JWT_SECRET`
-- `FRONTEND_URL`
-- `GEMINI_API_KEY`
-- `PORT`
-
-## MongoDB Atlas
-
-1. Create cluster.
-2. Create database user.
-3. Allow network access from backend host.
-4. Copy connection string to `MONGODB_URI`.
-
-## Notes
-
-- API health check: `/api/health`
-- SIP scheduler runs every 60 seconds on backend.
-- Frontend API calls now use `VITE_API_BASE_URL` via `src/lib/api.ts`.
+- Backend: deploy to Render/Railway from `backend` directory (or same repo service root set to `backend`).
