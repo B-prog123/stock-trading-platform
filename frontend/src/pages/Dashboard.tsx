@@ -70,7 +70,7 @@ export default function Dashboard() {
     { symbol: 'RELIANCE', name: 'Reliance Industries', price: '₹2,834', change: '+1.2%', up: true },
     { symbol: 'TCS', name: 'Tata Consultancy', price: '₹3,920', change: '+0.8%', up: true },
     { symbol: 'INFY', name: 'Infosys Ltd', price: '₹1,756', change: '-0.4%', up: false },
-    { symbol: 'HDFC', name: 'HDFC Bank', price: '₹1,618', change: '+0.6%', up: true },
+    { symbol: 'HDFCBANK', name: 'HDFC Bank', price: '₹1,618', change: '+0.6%', up: true },
     { symbol: 'WIPRO', name: 'Wipro Ltd', price: '₹452', change: '-0.9%', up: false },
   ];
 

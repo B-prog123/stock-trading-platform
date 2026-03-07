@@ -31,6 +31,7 @@ const popularStocks: StockQuote[] = [
   { symbol: 'INFY', name: 'Infosys Limited', price: 1680.72, change: 0.85 },
   { symbol: 'ICICIBANK', name: 'ICICI Bank Ltd.', price: 1050.22, change: -0.12 },
   { symbol: 'SBIN', name: 'State Bank of India', price: 780.42, change: 1.15 },
+  { symbol: 'WIPRO', name: 'Wipro Limited', price: 452.10, change: -0.90 },
 ];
 
 const stockMeta: Record<string, StockMeta> = {
@@ -40,6 +41,7 @@ const stockMeta: Record<string, StockMeta> = {
   INFY: { marketCap: '6.02T', avgVolume: '8.1M' },
   ICICIBANK: { marketCap: '7.84T', avgVolume: '15.5M' },
   SBIN: { marketCap: '6.81T', avgVolume: '21.7M' },
+  WIPRO: { marketCap: '2.44T', avgVolume: '4.2M' },
 };
 
 const intervalSeeds: Record<string, { labels: string[]; movement: number[] }> = {
@@ -400,8 +402,8 @@ export default function Market() {
                           <button
                             onClick={() => handleSearchPick(stock)}
                             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${isActive
-                                ? 'bg-emerald-500 text-black'
-                                : 'bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)]'
+                              ? 'bg-emerald-500 text-black'
+                              : 'bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)]'
                               }`}
                           >
                             {isActive ? 'Selected' : 'View'}
@@ -539,8 +541,8 @@ export default function Market() {
                 key={stock.symbol}
                 onClick={() => handleSearchPick(stock)}
                 className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all duration-300 group ${selectedStock.symbol === stock.symbol
-                    ? 'bg-emerald-500/10 border border-emerald-500/30'
-                    : 'bg-[var(--bg-secondary)] border border-transparent hover:bg-[var(--bg-primary)] hover:border-[var(--border-color)]'
+                  ? 'bg-emerald-500/10 border border-emerald-500/30'
+                  : 'bg-[var(--bg-secondary)] border border-transparent hover:bg-[var(--bg-primary)] hover:border-[var(--border-color)]'
                   }`}
               >
                 <div className="flex items-center gap-4">
