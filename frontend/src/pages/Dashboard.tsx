@@ -161,9 +161,9 @@ export default function Dashboard() {
       </div>
 
       {/* ── Quick Actions ── */}
-      <div>
+      <div className="responsive-container mt-4 mb-2">
         <h2 className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-[0.2em] mb-4 ml-1">Quick Terminals</h2>
-        <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-6 gap-3 sm:gap-4">
+        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
           {quickActions.map((a, i) => (
             <motion.button
               key={a.tab}
@@ -173,14 +173,14 @@ export default function Dashboard() {
               whileHover={{ scale: 1.05, y: -4 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setActiveTab(a.tab)}
-              className="flex flex-col items-center gap-3 p-5 rounded-3xl border border-[var(--border-color)] bg-[var(--bg-secondary)] hover:border-[var(--text-secondary)] shadow-sm hover:shadow-xl transition-all group"
+              className="flex flex-col items-center gap-2 p-3 sm:p-5 rounded-2xl sm:rounded-3xl border border-[var(--border-color)] bg-[var(--bg-secondary)] hover:border-[var(--text-secondary)] shadow-sm hover:shadow-xl transition-all group"
             >
-              <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${a.color} flex items-center justify-center text-white shadow-lg transform group-hover:rotate-6 transition-transform`}>
-                {React.cloneElement(a.icon as React.ReactElement, { size: 24 })}
+              <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-gradient-to-br ${a.color} flex items-center justify-center text-white shadow-lg transform group-hover:rotate-6 transition-transform`}>
+                {React.cloneElement(a.icon as React.ReactElement, { size: 18 })}
               </div>
               <div className="text-center">
-                <p className="text-sm font-black text-[var(--text-primary)] leading-tight">{a.label}</p>
-                <p className="text-[10px] text-[var(--text-muted)] mt-1 hidden sm:block font-medium">{a.desc}</p>
+                <p className="text-[11px] sm:text-sm font-black text-[var(--text-primary)] leading-tight">{a.label}</p>
+                <p className="text-[10px] text-[var(--text-muted)] mt-1 hidden lg:block font-medium">{a.desc}</p>
               </div>
             </motion.button>
           ))}
@@ -202,7 +202,7 @@ export default function Dashboard() {
               </div>
               <span className="text-[10px] font-black bg-blue-500/10 text-blue-500 border border-blue-500/20 rounded-lg px-3 py-1 uppercase tracking-widest">Active</span>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-[var(--border-color)]">
+            <div className="grid grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 lg:divide-x divide-[var(--border-color)]">
               {[
                 { label: 'Available Cash', value: `₹${availableBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, icon: <ArrowUpRight size={16} />, color: 'text-emerald-500', bg: 'bg-emerald-500/5' },
                 { label: 'Invested', value: `₹${totalHoldingsValue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, icon: <BarChart3 size={16} />, color: 'text-blue-500', bg: 'bg-blue-500/5' },
@@ -210,7 +210,7 @@ export default function Dashboard() {
                 { label: 'Assets', value: `${portfolio.length} positions`, icon: <Activity size={16} />, color: 'text-orange-500', bg: 'bg-orange-500/5' },
               ].map((m, i) => (
                 <motion.div key={m.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.07 }} className="p-8 hover:bg-[var(--bg-primary)] transition-colors group">
+                  transition={{ delay: i * 0.07 }} className="p-5 sm:p-8 hover:bg-[var(--bg-primary)] transition-colors group">
                   <div className={`flex items-center gap-2 mb-3 font-black text-[10px] uppercase tracking-widest ${m.color}`}>
                     <div className={`p-1.5 rounded-lg ${m.bg} group-hover:scale-110 transition-transform`}>{m.icon}</div>
                     {m.label}

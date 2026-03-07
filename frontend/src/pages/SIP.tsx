@@ -306,14 +306,14 @@ export default function SIP() {
         <p className="text-[var(--text-secondary)] mt-1">Automate weekly or monthly stock investing with tracking and execution history.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard icon={<Activity size={18} />} label="Active SIPs" value={String(activeCount || summary.activeSips)} />
-        <StatCard icon={<DollarSign size={18} />} label="Total Invested" value={`$${(summary.totalInvested || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`} />
-        <StatCard icon={<TrendingUp size={18} />} label="Total Shares" value={(summary.totalShares || 0).toFixed(4)} />
-        <StatCard icon={<History size={18} />} label="Profit / Loss" value={`${summary.profitLoss >= 0 ? '+' : ''}$${(summary.profitLoss || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`} tone={summary.profitLoss >= 0 ? 'up' : 'down'} />
+        <StatCard icon={<DollarSign size={18} />} label="Total Invested" value={`$${(summary.totalInvested || 0).toLocaleString(undefined, { maximumFractionDigits: 1 })}`} />
+        <StatCard icon={<TrendingUp size={18} />} label="Total Shares" value={(summary.totalShares || 0).toFixed(2)} />
+        <StatCard icon={<History size={18} />} label="Profit / Loss" value={`${summary.profitLoss >= 0 ? '+' : ''}$${(summary.profitLoss || 0).toLocaleString(undefined, { maximumFractionDigits: 1 })}`} tone={summary.profitLoss >= 0 ? 'up' : 'down'} />
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* Left Column: Form & Graph */}
         <div className="xl:col-span-1 space-y-6">

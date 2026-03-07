@@ -220,22 +220,22 @@ export default function Portfolio() {
       transition={{ duration: 0.4 }}
       className="space-y-10 pb-10"
     >
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-4">
         <div>
-          <h2 className="text-4xl font-bold mb-3 text-gradient">My Portfolio</h2>
-          <p className="text-[var(--text-secondary)] max-w-md">Comprehensive overview of your assets, SIP contribution, and live profit/loss.</p>
+          <h2 className="text-3xl sm:text-4xl font-bold mb-2 text-gradient">My Portfolio</h2>
+          <p className="text-sm text-[var(--text-secondary)] max-w-md">Comprehensive overview of your assets, SIP contribution, and live profit/loss.</p>
         </div>
         <button
           onClick={analyzePortfolio}
           disabled={analyzing || portfolio.length === 0}
-          className="neo-button flex items-center gap-3 px-8 py-4 rounded-2xl bg-[var(--text-primary)] text-[var(--bg-primary)] font-bold hover:opacity-90 transition-all disabled:opacity-50 shadow-xl shadow-[var(--text-primary)]/5"
+          className="neo-button w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-4 rounded-2xl bg-[var(--text-primary)] text-[var(--bg-primary)] font-bold hover:opacity-90 transition-all disabled:opacity-50 shadow-xl shadow-[var(--text-primary)]/5"
         >
           {analyzing ? <Sparkles className="animate-spin" size={20} /> : <Brain size={20} />}
           {analyzing ? 'Analyzing...' : 'AI Health Check'}
         </button>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-6">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
           <MetricCard title="Total Assets" value={portfolio.length.toString()} subtitle="Unique holdings" icon={<Briefcase className="text-emerald-400" size={20} />} />
         </motion.div>
@@ -243,13 +243,13 @@ export default function Portfolio() {
           <MetricCard title="Diversification" value={`${diversificationScore}/100`} subtitle={diversificationScore > 70 ? 'Excellent spread' : 'Concentrated risk'} icon={<PieChartIcon className="text-cyan-400" size={20} />} progress={diversificationScore} />
         </motion.div>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-          <MetricCard title="Current Value" value={`$${totalValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}`} subtitle="Live portfolio value" icon={<Wallet className="text-emerald-400" size={20} />} />
+          <MetricCard title="Current Value" value={`$${totalValue.toLocaleString(undefined, { maximumFractionDigits: 1 })}`} subtitle="Live value" icon={<Wallet className="text-emerald-400" size={20} />} />
         </motion.div>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
-          <MetricCard title="Total P&L" value={`${totals.profitLoss >= 0 ? '+' : '-'}$${Math.abs(totals.profitLoss).toLocaleString(undefined, { maximumFractionDigits: 2 })}`} subtitle={`${totals.profitLossPercent >= 0 ? '+' : ''}${totals.profitLossPercent.toFixed(2)}%`} icon={totals.profitLoss >= 0 ? <TrendingUp className="text-emerald-400" size={20} /> : <TrendingDown className="text-red-400" size={20} />} />
+          <MetricCard title="Total P&L" value={`${totals.profitLoss >= 0 ? '+' : '-'}$${Math.abs(totals.profitLoss).toLocaleString(undefined, { maximumFractionDigits: 1 })}`} subtitle={`${totals.profitLossPercent >= 0 ? '+' : ''}${totals.profitLossPercent.toFixed(2)}%`} icon={totals.profitLoss >= 0 ? <TrendingUp className="text-emerald-400" size={20} /> : <TrendingDown className="text-red-400" size={20} />} />
         </motion.div>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-          <MetricCard title="SIP Invested" value={`$${(breakdown.sipInvested || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`} subtitle={`Manual: $${(breakdown.manualInvested || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`} icon={<Activity className="text-cyan-400" size={20} />} />
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="col-span-2 sm:col-span-1">
+          <MetricCard title="SIP Invested" value={`$${(breakdown.sipInvested || 0).toLocaleString(undefined, { maximumFractionDigits: 1 })}`} subtitle={`Manual: $${(breakdown.manualInvested || 0).toLocaleString(undefined, { maximumFractionDigits: 1 })}`} icon={<Activity className="text-cyan-400" size={20} />} />
         </motion.div>
       </div>
 

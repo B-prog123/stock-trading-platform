@@ -92,13 +92,13 @@ export default function Navbar() {
         {/* Action Icons */}
         <div className="flex items-center gap-1 sm:gap-3">
 
-          {/* Market Ticker (Desktop only) */}
-          <div className="hidden xl:flex items-center gap-6 mr-4 py-2 px-4 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-color)]">
+          {/* Market Ticker (Scrollable on smaller screens) */}
+          <div className="hidden lg:flex items-center gap-4 sm:gap-6 mr-2 sm:mr-4 py-2 px-3 sm:px-4 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-color)] overflow-x-auto no-scrollbar max-w-[200px] sm:max-w-none">
             {indexData.map(idx => (
-              <div key={idx.name} className="flex flex-col">
+              <div key={idx.name} className="flex flex-col shrink-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">{idx.name}</span>
-                  <span className={`text-[10px] font-bold ${idx.change >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                  <span className="text-[9px] sm:text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">{idx.name}</span>
+                  <span className={`text-[9px] sm:text-[10px] font-bold ${idx.change >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
                     {idx.change >= 0 ? '▲' : '▼'} {idx.pctChange}%
                   </span>
                 </div>

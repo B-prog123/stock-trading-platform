@@ -75,6 +75,10 @@
     border: 1px solid var(--border-color);
   }
 
+  .responsive-container {
+    @apply w-full max-w-full px-4 sm:px-6 lg:px-8 mx-auto;
+  }
+
   .neo-button {
     @apply relative overflow-hidden transition-colors active:scale-95;
   }
