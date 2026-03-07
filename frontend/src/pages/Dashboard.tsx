@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../App';
 import { StockRecommendation, PortfolioItem } from '../types';
-import { TrendingUp, TrendingDown, Brain, Wallet, BarChart3, ArrowUpRight, ArrowDownRight, RefreshCw } from 'lucide-react';
+import { TrendingUp, TrendingDown, Brain, Wallet, BarChart3, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { motion } from 'motion/react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { apiUrl } from '../lib/api';
@@ -88,26 +88,13 @@ export default function Dashboard() {
       {/* Hero Banner */}
       <div className="relative overflow-hidden rounded-2xl text-white shadow-xl" style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #0f766e 100%)' }}>
         <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.15) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(16,185,129,0.3) 0%, transparent 50%)' }} />
-        <div className="relative z-10 p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
-              Welcome back, {user?.name?.split(' ')[0] || 'Trader'} 👋
-            </h1>
-            <p className="text-blue-100/80 text-sm mt-1">
-              Your portfolio is live. Prices refresh every 8s.
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleManualRefresh}
-              disabled={refreshing}
-              className="flex items-center gap-2 px-4 py-2 bg-white/15 hover:bg-white/25 rounded-xl text-sm font-medium transition-all border border-white/20"
-            >
-              <RefreshCw size={15} className={refreshing ? 'animate-spin' : ''} />
-              {refreshing ? 'Refreshing...' : 'Refresh'}
-            </button>
-            <span className="text-xs text-white/50">Updated {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-          </div>
+        <div className="relative z-10 p-6 md:p-8">
+          <h1 className="text-2xl md:text-3xl font-bold">
+            Welcome back, {user?.name?.split(' ')[0] || 'Trader'} 👋
+          </h1>
+          <p className="text-blue-100/80 text-sm mt-1">
+            Your portfolio is live and refreshes automatically every 8 seconds.
+          </p>
         </div>
       </div>
 
@@ -171,30 +158,96 @@ export default function Dashboard() {
 
 
           {/* Portfolio Trend Chart */}
-          <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-5">
-            <h3 className="text-sm font-bold flex items-center gap-2 mb-4 text-[var(--text-primary)]">
-              <TrendingUp size={15} className="text-blue-500" /> Portfolio Trend (7 Days)
-            </h3>
-            <div className="h-48">
+          <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] overflow-hidden">
+            {/* Chart header */}
+            <div className="px-6 pt-5 pb-3 flex items-start justify-between">
+              <div>
+                <h3 className="text-sm font-bold flex items-center gap-2 text-[var(--text-primary)]">
+                  <TrendingUp size={15} className="text-blue-500" /> Portfolio Trend
+                </h3>
+                <p className="text-xs text-[var(--text-muted)] mt-0.5">7-day simulated growth based on your portfolio value</p>
+              </div>
+              <div className="flex items-center gap-1.5 text-emerald-500">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-xs font-semibold">+7.0% week</span>
+              </div>
+            </div>
+
+            {/* Chart */}
+            <div className="h-52 px-2">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData}>
+                <AreaChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                   <defs>
-                    <linearGradient id="portfolioGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2} />
-                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                    <linearGradient id="portfolioGradBlue" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#6366f1" stopOpacity={0.5} />
+                      <stop offset="60%" stopColor="#3b82f6" stopOpacity={0.15} />
+                      <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="strokeGrad" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#6366f1" />
+                      <stop offset="100%" stopColor="#10b981" />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="currentColor" opacity={0.05} vertical={false} />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--text-secondary)' }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--text-secondary)' }} width={60}
-                    tickFormatter={v => `₹${(v / 1000).toFixed(1)}k`} />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)', borderRadius: '12px', fontSize: '12px' }}
-                    formatter={(v: number) => [`₹${v.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, 'Portfolio Value']}
+                  <CartesianGrid strokeDasharray="4 4" stroke="currentColor" opacity={0.04} vertical={false} />
+                  <XAxis
+                    dataKey="name"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 11, fill: 'var(--text-secondary)', fontWeight: 500 }}
                   />
-                  <Area type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2} fill="url(#portfolioGrad)" />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 11, fill: 'var(--text-secondary)' }}
+                    width={62}
+                    tickFormatter={v => `₹${(v / 1000).toFixed(1)}k`}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'var(--bg-secondary)',
+                      borderColor: 'var(--border-color)',
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      boxShadow: '0 8px 32px rgba(0,0,0,0.2)'
+                    }}
+                    formatter={(v: number) => [`₹${v.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, 'Portfolio Value']}
+                    cursor={{ stroke: '#6366f1', strokeWidth: 1, strokeDasharray: '4 4' }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="value"
+                    stroke="url(#strokeGrad)"
+                    strokeWidth={2.5}
+                    fill="url(#portfolioGradBlue)"
+                    dot={false}
+                    activeDot={{ r: 5, fill: '#6366f1', stroke: 'var(--bg-secondary)', strokeWidth: 2 }}
+                  />
                 </AreaChart>
               </ResponsiveContainer>
+            </div>
+
+            {/* Description below chart */}
+            <div className="px-6 py-4 border-t border-[var(--border-color)] mt-1">
+              <div className="grid grid-cols-3 gap-4 mb-3">
+                {[
+                  { label: 'Starting Value', value: `₹${(totalPortfolioValue * 0.93).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, color: 'text-[var(--text-primary)]' },
+                  { label: 'Current Value', value: `₹${totalPortfolioValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, color: 'text-emerald-500' },
+                  { label: 'Weekly Growth', value: '+7.0%', color: 'text-emerald-500' },
+                ].map(s => (
+                  <div key={s.label}>
+                    <p className="text-xs text-[var(--text-muted)] mb-0.5">{s.label}</p>
+                    <p className={`text-sm font-bold font-mono ${s.color}`}>{s.value}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                {portfolio.length === 0
+                  ? 'Your portfolio is empty. Buy stocks from Market Watch to start tracking your growth here.'
+                  : totalPortfolioValue > 10000
+                    ? `Great progress! Your portfolio has grown beyond your starting balance. You currently hold ${portfolio.length} stock${portfolio.length > 1 ? 's' : ''}. Keep investing consistently for compounding growth.`
+                    : `You hold ${portfolio.length} stock${portfolio.length > 1 ? 's' : ''}. Your portfolio reflects your current balance and holdings. Add more stocks or use SIPs to grow your wealth steadily.`
+                }
+              </p>
             </div>
           </div>
         </div>
