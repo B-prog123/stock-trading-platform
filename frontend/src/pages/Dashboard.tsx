@@ -168,39 +168,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Holdings & P&L */}
-          <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] overflow-hidden">
-            <div className="px-5 py-4 border-b border-[var(--border-color)] flex items-center justify-between">
-              <h3 className="font-semibold text-[var(--text-primary)] flex items-center gap-2">
-                <BarChart3 size={16} className="text-emerald-500" /> Holdings & P&L
-              </h3>
-            </div>
-            <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div>
-                <p className="text-xs text-[var(--text-secondary)] uppercase tracking-widest font-semibold mb-2">Total Portfolio Value</p>
-                <motion.h2
-                  key={totalPortfolioValue}
-                  initial={{ scale: 1.05, color: '#10b981' }}
-                  animate={{ scale: 1, color: 'var(--text-primary)' }}
-                  transition={{ duration: 0.4 }}
-                  className="text-3xl lg:text-4xl font-mono font-bold tracking-tighter"
-                >
-                  ₹{totalPortfolioValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </motion.h2>
-                <p className="text-xs text-[var(--text-muted)] mt-1">Cash + Holdings combined</p>
-              </div>
-              <div className="flex flex-col sm:items-end justify-center">
-                <p className="text-xs text-[var(--text-secondary)] uppercase tracking-widest font-semibold mb-2">Today's Estimated P&L</p>
-                <div className={`flex items-center gap-2 font-mono font-bold text-xl ${todayPnL >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                  {todayPnL >= 0 ? <ArrowUpRight size={20} /> : <ArrowDownRight size={20} />}
-                  {todayPnL >= 0 ? '+' : '-'}₹{Math.abs(todayPnL).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </div>
-                <p className={`text-sm font-mono mt-1 ${todayPnL >= 0 ? 'text-emerald-500/70' : 'text-rose-500/70'}`}>
-                  (+1.25% today)
-                </p>
-              </div>
-            </div>
-          </div>
+
 
           {/* Portfolio Trend Chart */}
           <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-5">
