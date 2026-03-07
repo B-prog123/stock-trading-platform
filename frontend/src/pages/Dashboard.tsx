@@ -66,13 +66,13 @@ export default function Dashboard() {
     { label: 'Support', desc: 'Get help', icon: <MessageCircle size={20} />, color: 'from-rose-500 to-red-600', tab: 'support' },
   ];
 
-  const marketMovers = [
-    { symbol: 'RELIANCE', name: 'Reliance Industries', price: '₹2,834', change: '+1.2%', up: true },
-    { symbol: 'TCS', name: 'Tata Consultancy', price: '₹3,920', change: '+0.8%', up: true },
-    { symbol: 'INFY', name: 'Infosys Ltd', price: '₹1,756', change: '-0.4%', up: false },
-    { symbol: 'HDFCBANK', name: 'HDFC Bank', price: '₹1,618', change: '+0.6%', up: true },
-    { symbol: 'WIPRO', name: 'Wipro Ltd', price: '₹452', change: '-0.9%', up: false },
-  ];
+  const [marketMovers, setMarketMovers] = useState([
+    { symbol: 'RELIANCE', name: 'Reliance Industries', price: 2834.00, change: 1.2, up: true },
+    { symbol: 'TCS', name: 'Tata Consultancy', price: 3920.00, change: 0.8, up: true },
+    { symbol: 'INFY', name: 'Infosys Ltd', price: 1756.00, change: -0.4, up: false },
+    { symbol: 'HDFCBANK', name: 'HDFC Bank', price: 1618.00, change: 0.6, up: true },
+    { symbol: 'WIPRO', name: 'Wipro Ltd', price: 452.00, change: -0.9, up: false },
+  ]);
 
   const features = [
     { icon: <Zap size={22} />, title: 'Real-time Prices', desc: 'Live market data updated every few seconds across all instruments.' },
@@ -83,58 +83,78 @@ export default function Dashboard() {
     { icon: <Award size={22} />, title: 'Portfolio Analytics', desc: 'Track P&L, holdings value, and investment history in one place.' },
   ];
 
+  // ── Price Fluctuations ──
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setMarketMovers(current =>
+        current.map(m => {
+          const move = (Math.random() - 0.5) * 0.3;
+          const newPrice = m.price * (1 + move / 100);
+          const newChange = m.change + move;
+          return {
+            ...m,
+            price: parseFloat(newPrice.toFixed(2)),
+            change: parseFloat(newChange.toFixed(2)),
+            up: newChange >= 0
+          };
+        })
+      );
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
-    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 pb-10">
 
       {/* ── Hero: Welcome + Phone Mockup ── */}
-      <div className="relative overflow-hidden rounded-3xl text-white shadow-2xl min-h-[260px]"
+      <div className="relative overflow-hidden rounded-[2.5rem] text-white shadow-2xl min-h-[280px] sm:min-h-[320px]"
         style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f766e 100%)' }}>
         {/* Animated orbs */}
-        <div className="absolute w-72 h-72 rounded-full opacity-20 -top-16 -left-16"
+        <div className="absolute w-72 h-72 rounded-full opacity-25 -top-16 -left-16"
           style={{ background: 'radial-gradient(circle, #6366f1, transparent 70%)' }} />
         <div className="absolute w-56 h-56 rounded-full opacity-20 -bottom-10 right-40"
           style={{ background: 'radial-gradient(circle, #10b981, transparent 70%)' }} />
 
-        <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-0 h-full">
+        <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-8 h-full">
           {/* Left: Text */}
-          <div className="p-7 md:p-10 flex flex-col justify-center">
-            <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-3 py-1 text-xs font-medium mb-4 w-fit border border-white/20">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <div className="p-8 sm:p-12 flex flex-col justify-center text-center md:text-left items-center md:items-start">
+            <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-1.5 text-xs font-bold mb-6 w-fit border border-white/20 backdrop-blur-md">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
               Markets are live
             </div>
-            <h1 className="text-3xl md:text-4xl font-extrabold leading-tight mb-3">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black leading-[1.1] mb-4">
               Welcome back,<br />
-              <span className="bg-gradient-to-r from-blue-300 to-emerald-300 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-blue-300 via-emerald-300 to-cyan-300 bg-clip-text text-transparent">
                 {user?.name?.split(' ')[0] || 'Trader'} 👋
               </span>
             </h1>
-            <p className="text-blue-100/75 text-sm leading-relaxed mb-5 max-w-xs">
-              Your personal trading dashboard. Track markets, manage your portfolio and invest smarter — all in one place.
+            <p className="text-blue-100/70 text-sm sm:text-base leading-relaxed mb-8 max-w-sm">
+              Manage your wealth, track real-time markers, and invest with AI-powered confidence.
             </p>
-            <div className="flex flex-wrap gap-3">
-              <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
+            <div className="flex flex-wrap justify-center md:justify-start gap-4">
+              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                 onClick={() => setActiveTab('market')}
-                className="px-5 py-2.5 bg-white text-slate-900 font-semibold text-sm rounded-xl flex items-center gap-2 shadow-lg">
-                <Play size={14} fill="currentColor" /> Start Trading
+                className="px-7 py-3 bg-white text-slate-900 font-black text-sm rounded-2xl flex items-center gap-2 shadow-xl hover:shadow-white/10 transition-all">
+                <Play size={16} fill="currentColor" /> Start Trading
               </motion.button>
-              <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
+              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                 onClick={() => setActiveTab('portfolio')}
-                className="px-5 py-2.5 bg-white/15 hover:bg-white/25 font-semibold text-sm rounded-xl border border-white/25 transition-all">
-                View Portfolio
+                className="px-7 py-3 bg-white/10 hover:bg-white/20 font-bold text-sm rounded-2xl border border-white/20 backdrop-blur-md transition-all">
+                My Holdings
               </motion.button>
             </div>
           </div>
 
           {/* Right: Phone Mockup */}
-          <div className="hidden md:flex items-end justify-center relative overflow-hidden">
+          <div className="hidden md:flex items-end justify-center relative overflow-hidden pr-12">
             <motion.img
               src="/phone-mockup.png"
               alt="Stockify mobile app"
-              className="h-[260px] object-contain drop-shadow-2xl"
-              initial={{ y: 30, opacity: 0 }}
+              className="h-[320px] lg:h-[380px] object-contain drop-shadow-2xl"
+              initial={{ y: 60, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ type: 'spring', stiffness: 120, damping: 18, delay: 0.2 }}
-              style={{ filter: 'drop-shadow(0 24px 48px rgba(99,102,241,0.35))' }}
+              transition={{ type: 'spring', stiffness: 100, damping: 15, delay: 0.2 }}
+              style={{ filter: 'drop-shadow(0 32px 64px rgba(99,102,241,0.45))' }}
             />
           </div>
         </div>
@@ -142,55 +162,60 @@ export default function Dashboard() {
 
       {/* ── Quick Actions ── */}
       <div>
-        <h2 className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-widest mb-3">Quick Actions</h2>
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+        <h2 className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-[0.2em] mb-4 ml-1">Quick Terminals</h2>
+        <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-6 gap-3 sm:gap-4">
           {quickActions.map((a, i) => (
             <motion.button
               key={a.tab}
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
-              whileHover={{ scale: 1.04, y: -2 }}
-              whileTap={{ scale: 0.96 }}
+              whileHover={{ scale: 1.05, y: -4 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => setActiveTab(a.tab)}
-              className="flex flex-col items-center gap-2 p-4 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] hover:border-[var(--text-secondary)] transition-all group"
+              className="flex flex-col items-center gap-3 p-5 rounded-3xl border border-[var(--border-color)] bg-[var(--bg-secondary)] hover:border-[var(--text-secondary)] shadow-sm hover:shadow-xl transition-all group"
             >
-              <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${a.color} flex items-center justify-center text-white shadow-lg`}>
-                {a.icon}
+              <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${a.color} flex items-center justify-center text-white shadow-lg transform group-hover:rotate-6 transition-transform`}>
+                {React.cloneElement(a.icon as React.ReactElement, { size: 24 })}
               </div>
-              <p className="text-xs font-semibold text-[var(--text-primary)] text-center leading-tight">{a.label}</p>
-              <p className="text-[10px] text-[var(--text-muted)] text-center hidden sm:block">{a.desc}</p>
+              <div className="text-center">
+                <p className="text-sm font-black text-[var(--text-primary)] leading-tight">{a.label}</p>
+                <p className="text-[10px] text-[var(--text-muted)] mt-1 hidden sm:block font-medium">{a.desc}</p>
+              </div>
             </motion.button>
           ))}
         </div>
       </div>
 
-      {/* ── Main Grid ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
+      {/* ── Main Grid: Performance & Market ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-8">
 
-          {/* Equity & Margin */}
-          <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] overflow-hidden">
-            <div className="px-5 py-4 border-b border-[var(--border-color)] flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Wallet size={16} className="text-blue-500" />
-                <h3 className="font-semibold text-[var(--text-primary)]">Equity & Margin</h3>
+          {/* Wallet Summary */}
+          <div className="rounded-[2.5rem] border border-[var(--border-color)] bg-[var(--bg-secondary)] overflow-hidden shadow-lg">
+            <div className="px-8 py-6 border-b border-[var(--border-color)] flex items-center justify-between bg-gradient-to-r from-[var(--bg-primary)]/50 to-transparent">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                  <Wallet size={20} className="text-blue-500" />
+                </div>
+                <h3 className="font-black text-lg text-[var(--text-primary)]">Wallet Summary</h3>
               </div>
-              <span className="text-xs bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-full px-2 py-0.5 font-medium">Live</span>
+              <span className="text-[10px] font-black bg-blue-500/10 text-blue-500 border border-blue-500/20 rounded-lg px-3 py-1 uppercase tracking-widest">Active</span>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-[var(--border-color)]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-[var(--border-color)]">
               {[
-                { label: 'Available Cash', value: `₹${availableBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: <ArrowUpRight size={14} />, color: 'text-emerald-500' },
-                { label: 'Invested', value: `₹${totalHoldingsValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: <BarChart3 size={14} />, color: 'text-blue-500' },
-                { label: 'Total Portfolio', value: `₹${totalPortfolioValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: <TrendingUp size={14} />, color: 'text-violet-500' },
-                { label: 'Holdings', value: `${portfolio.length} stock${portfolio.length !== 1 ? 's' : ''}`, icon: <BarChart3 size={14} />, color: 'text-orange-500' },
+                { label: 'Available Cash', value: `₹${availableBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, icon: <ArrowUpRight size={16} />, color: 'text-emerald-500', bg: 'bg-emerald-500/5' },
+                { label: 'Invested', value: `₹${totalHoldingsValue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, icon: <BarChart3 size={16} />, color: 'text-blue-500', bg: 'bg-blue-500/5' },
+                { label: 'Total Value', value: `₹${totalPortfolioValue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`, icon: <TrendingUp size={16} />, color: 'text-violet-500', bg: 'bg-violet-500/5' },
+                { label: 'Assets', value: `${portfolio.length} positions`, icon: <Activity size={16} />, color: 'text-orange-500', bg: 'bg-orange-500/5' },
               ].map((m, i) => (
                 <motion.div key={m.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.07 }} className="p-4 hover:bg-[var(--bg-primary)] transition-colors">
-                  <div className={`flex items-center gap-1.5 mb-2 ${m.color}`}>{m.icon}
-                    <span className="text-xs text-[var(--text-secondary)] font-medium">{m.label}</span>
+                  transition={{ delay: i * 0.07 }} className="p-8 hover:bg-[var(--bg-primary)] transition-colors group">
+                  <div className={`flex items-center gap-2 mb-3 font-black text-[10px] uppercase tracking-widest ${m.color}`}>
+                    <div className={`p-1.5 rounded-lg ${m.bg} group-hover:scale-110 transition-transform`}>{m.icon}</div>
+                    {m.label}
                   </div>
-                  <p className={`font-mono font-bold text-base ${m.color}`}>{m.value}</p>
+                  <p className={`font-mono font-black text-xl lg:text-2xl ${m.color} tracking-tighter`}>{m.value}</p>
                 </motion.div>
               ))}
             </div>
@@ -262,62 +287,45 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Top Market Movers */}
-          <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] overflow-hidden">
-            <div className="px-5 py-4 border-b border-[var(--border-color)] flex items-center justify-between">
-              <h3 className="font-semibold text-sm flex items-center gap-2 text-[var(--text-primary)]">
-                <Activity size={15} className="text-orange-500" /> Top Market Movers
-              </h3>
-              <button onClick={() => setActiveTab('market')} className="text-xs text-blue-500 hover:underline">View all →</button>
+          {/* Top Movers */}
+          <div className="rounded-[2.5rem] border border-[var(--border-color)] bg-[var(--bg-secondary)] overflow-hidden shadow-lg">
+            <div className="px-8 py-6 border-b border-[var(--border-color)] flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                  <TrendingUp size={20} className="text-emerald-500" />
+                </div>
+                <h3 className="font-black text-lg text-[var(--text-primary)]">Market Heartbeat</h3>
+              </div>
+              <p className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest hidden sm:block">Top Movers Today</p>
             </div>
-            <div className="divide-y divide-[var(--border-color)]">
-              {marketMovers.map((s, i) => (
-                <motion.button key={s.symbol} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.06 }}
-                  whileHover={{ backgroundColor: 'var(--bg-primary)' }}
-                  onClick={() => { setSelectedSymbol(s.symbol); setActiveTab('market'); }}
-                  className="w-full flex items-center justify-between px-5 py-3 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold text-white ${s.up ? 'bg-emerald-600' : 'bg-rose-600'}`}>
-                      {s.symbol.charAt(0)}
+            <div className="divide-y divide-[var(--border-color)] bg-gradient-to-b from-transparent to-[var(--bg-primary)]/30">
+              {marketMovers.map((stock, i) => (
+                <motion.button
+                  key={stock.symbol}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                  whileHover={{ backgroundColor: 'var(--bg-primary)', x: 6 }}
+                  onClick={() => { setSelectedSymbol(stock.symbol); setActiveTab('market'); }}
+                  className="w-full px-8 py-5 flex items-center justify-between transition-all group"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm transition-all ${stock.up ? 'bg-emerald-500/10 text-emerald-500 group-hover:bg-emerald-500 group-hover:text-black' : 'bg-rose-500/10 text-rose-500 group-hover:bg-rose-500 group-hover:text-black'}`}>
+                      {stock.symbol[0]}
                     </div>
                     <div className="text-left">
-                      <p className="text-sm font-semibold text-[var(--text-primary)]">{s.symbol}</p>
-                      <p className="text-xs text-[var(--text-muted)]">{s.name}</p>
+                      <p className="font-black text-sm text-[var(--text-primary)] group-hover:text-blue-500 transition-colors uppercase tracking-tight">{stock.symbol}</p>
+                      <p className="text-[10px] text-[var(--text-muted)] font-bold">{stock.name}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-mono font-bold text-[var(--text-primary)]">{s.price}</p>
-                    <p className={`text-xs font-semibold ${s.up ? 'text-emerald-500' : 'text-rose-500'}`}>{s.change}</p>
+                    <p className="font-mono text-sm font-black text-[var(--text-primary)] mb-0.5 tracking-tight">₹{stock.price.toLocaleString('en-IN')}</p>
+                    <div className={`flex items-center justify-end gap-1 text-[10px] font-black px-2 py-0.5 rounded-lg ${stock.up ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
+                      {stock.up ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />}
+                      {stock.up ? '+' : ''}{stock.change.toFixed(2)}%
+                    </div>
                   </div>
                 </motion.button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* ── Right side ── */}
-        <div className="space-y-6">
-          {/* Market Indices */}
-          <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-4">
-            <h3 className="text-sm font-bold flex items-center gap-2 mb-4 text-[var(--text-primary)]">
-              <BarChart3 size={14} className="text-blue-500" /> Market Indices
-            </h3>
-            <div className="space-y-3">
-              {[
-                { name: 'NIFTY 50', exchange: 'NSE', value: '22,326.90', change: '+38.45', pct: '+0.17%', up: true },
-                { name: 'SENSEX', exchange: 'BSE', value: '73,665.27', change: '-36.42', pct: '-0.05%', up: false },
-                { name: 'BANK NIFTY', exchange: 'NSE', value: '48,234.55', change: '+120.30', pct: '+0.25%', up: true },
-              ].map(idx => (
-                <div key={idx.name} className="flex justify-between items-center p-3 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-color)]">
-                  <div>
-                    <p className="font-semibold text-sm text-[var(--text-primary)]">{idx.name}</p>
-                    <p className="text-xs text-[var(--text-secondary)]">{idx.exchange}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className={`font-mono font-bold text-sm ${idx.up ? 'text-emerald-500' : 'text-red-500'}`}>{idx.value}</p>
-                    <p className={`text-xs ${idx.up ? 'text-emerald-500' : 'text-red-500'}`}>{idx.change} ({idx.pct})</p>
-                  </div>
-                </div>
               ))}
             </div>
           </div>

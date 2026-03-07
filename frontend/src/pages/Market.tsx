@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, TrendingUp, TrendingDown, Clock, BarChart3, Info, Plus, Minus, Bookmark, Sparkles } from 'lucide-react';
+import { Search, TrendingUp, TrendingDown, Clock, BarChart3, Info, Plus, Minus, Bookmark, Sparkles, ChevronLeft } from 'lucide-react';
 import { useAuth } from '../App';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { apiUrl } from '../lib/api';
 import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
 
@@ -80,6 +80,7 @@ function buildSimpleChartData(basePrice: number, interval: string): SimpleChartP
 export default function Market() {
   const { token, refreshUser, selectedSymbol, setSelectedSymbol, addNotification, logout } = useAuth();
   const [search, setSearch] = useState('');
+  const [stocks, setStocks] = useState<StockQuote[]>(popularStocks);
   const [selectedStock, setSelectedStock] = useState<StockQuote>(popularStocks[0]);
   const [quantity, setQuantity] = useState(1);
   const [trading, setTrading] = useState(false);
@@ -87,514 +88,311 @@ export default function Market() {
   const [chartInterval, setChartInterval] = useState('1');
   const [isWatchlisted, setIsWatchlisted] = useState(false);
   const [graphMode, setGraphMode] = useState<'simple' | 'advanced'>('simple');
+  const [showListOnMobile, setShowListOnMobile] = useState(true);
+
+  // ── Real-time Price Fluctuations ──
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setStocks(currentStocks =>
+        currentStocks.map(stock => {
+          const changePercent = (Math.random() - 0.5) * 0.4; // +/- 0.2%
+          const newPrice = stock.price * (1 + changePercent / 100);
+          const newChange = stock.change + changePercent;
+          return { ...stock, price: parseFloat(newPrice.toFixed(2)), change: parseFloat(newChange.toFixed(2)) };
+        })
+      );
+    }, 5000); // 5s for smoother performance in dev
+    return () => clearInterval(interval);
+  }, []);
+
+  // Sync selected stock with fluctuating list
+  useEffect(() => {
+    const updated = stocks.find(s => s.symbol === selectedStock.symbol);
+    if (updated) setSelectedStock(updated);
+  }, [stocks]);
+
+  // Handle external selection (from Watchlist/Dashboard)
+  useEffect(() => {
+    if (selectedSymbol) {
+      const stock = stocks.find(s => s.symbol === selectedSymbol);
+      if (stock) {
+        setSelectedStock(stock);
+        setShowListOnMobile(false);
+      }
+      setSelectedSymbol(null);
+    }
+  }, [selectedSymbol]);
 
   const normalizedSearch = search.trim().toLowerCase();
 
   const filteredStocks = useMemo(() => {
-    if (!normalizedSearch) return popularStocks;
-    return popularStocks.filter((stock) => {
+    if (!normalizedSearch) return stocks;
+    return stocks.filter((stock) => {
       return stock.symbol.toLowerCase().includes(normalizedSearch) || stock.name.toLowerCase().includes(normalizedSearch);
     });
-  }, [normalizedSearch]);
+  }, [stocks, normalizedSearch]);
 
   const simpleChartData = useMemo(() => {
     return buildSimpleChartData(selectedStock.price, chartInterval);
   }, [selectedStock.symbol, selectedStock.price, chartInterval]);
 
-  const startPrice = simpleChartData[0]?.price ?? selectedStock.price;
-  const endPrice = simpleChartData[simpleChartData.length - 1]?.price ?? selectedStock.price;
-  const netMove = ((endPrice - startPrice) / startPrice) * 100;
-
-  useEffect(() => {
-    if (!selectedSymbol) return;
-
-    const stock = popularStocks.find((s) => s.symbol === selectedSymbol);
-    if (stock) {
-      setSelectedStock(stock);
-    } else {
-      setSelectedStock({
-        symbol: selectedSymbol,
-        name: `${selectedSymbol} Asset`,
-        price: Math.random() * 500 + 50,
-        change: parseFloat((Math.random() * 10 - 5).toFixed(2)),
-      });
-    }
-
-    setSelectedSymbol(null);
-  }, [selectedSymbol, setSelectedSymbol]);
-
-  useEffect(() => {
-    if (!normalizedSearch) return;
-    const exactMatch = popularStocks.find((stock) => stock.symbol.toLowerCase() === normalizedSearch);
-    if (exactMatch) {
-      setSelectedStock(exactMatch);
-    }
-  }, [normalizedSearch]);
-
-  useEffect(() => {
-    const checkWatchlist = async () => {
-      if (!token) return;
-      try {
-        const res = await fetch(apiUrl('/api/watchlist'), {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const watchlist = await res.json();
-          setIsWatchlisted(watchlist.some((item: any) => item.symbol === selectedStock.symbol));
-        }
-      } catch (err) {
-        console.error('Check watchlist error', err);
-      }
-    };
-    checkWatchlist();
-  }, [selectedStock.symbol, token]);
-
-  const toggleWatchlist = async () => {
-    try {
-      if (isWatchlisted) {
-        await fetch(apiUrl(`/api/watchlist/${selectedStock.symbol}`), {
-          method: 'DELETE',
-          headers: { Authorization: `Bearer ${token}` }
-        });
-      } else {
-        await fetch(apiUrl('/api/watchlist'), {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify({ symbol: selectedStock.symbol })
-        });
-      }
-      setIsWatchlisted(!isWatchlisted);
-    } catch (err) {
-      console.error('Toggle watchlist error', err);
-    }
-  };
-
   const handleTrade = async (type: 'BUY' | 'SELL') => {
+    if (!token) return;
     setTrading(true);
     setMessage('');
     try {
       const res = await fetch(apiUrl('/api/trade'), {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          symbol: selectedStock.symbol,
-          quantity,
-          price: selectedStock.price,
-          type
-        })
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ symbol: selectedStock.symbol, quantity, type }),
       });
-
-      if (res.status === 401 || res.status === 403) {
-        logout();
-        return;
-      }
-
-      let data;
-      const contentType = res.headers.get('content-type');
-      if (contentType && contentType.indexOf('application/json') !== -1) {
-        data = await res.json();
-      } else {
-        data = { error: await res.text() };
-      }
-
+      const data = await res.json();
       if (res.ok) {
-        const successMsg = `Successfully ${type === 'BUY' ? 'bought' : 'sold'} ${quantity} shares of ${selectedStock.symbol}`;
-        setMessage(successMsg);
-        addNotification(`${type} Order Executed`, successMsg, 'success');
+        setMessage(`${type === 'BUY' ? 'Bought' : 'Sold'} ${quantity} shares of ${selectedStock.symbol}`);
+        addNotification(`${type === 'BUY' ? 'Purchased' : 'Sold'} ${quantity} units of ${selectedStock.symbol} at ₹${selectedStock.price}`, type === 'BUY' ? 'SUCCESS' : 'INFO');
         refreshUser();
       } else {
-        const errorMsg = data.error || 'Trade failed';
-        setMessage(errorMsg);
-        addNotification('Trade Failed', errorMsg, 'error');
+        setMessage(data.error || 'Trade failed');
       }
     } catch (err) {
-      console.error('Trade error:', err);
       setMessage('Network error');
-      addNotification('Error', 'Network error occurred during trade', 'error');
     } finally {
       setTrading(false);
     }
   };
 
-  const handleSearchPick = (stock: StockQuote) => {
-    setSelectedStock(stock);
+  const toggleWatchlist = async () => {
+    if (!token) return;
+    try {
+      const method = isWatchlisted ? 'DELETE' : 'POST';
+      const res = await fetch(apiUrl('/api/watchlist'), {
+        method,
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ symbol: selectedStock.symbol }),
+      });
+      if (res.ok) {
+        setIsWatchlisted(!isWatchlisted);
+        addNotification(`${selectedStock.symbol} ${isWatchlisted ? 'removed from' : 'added to'} watchlist`, 'INFO');
+      }
+    } catch (err) { console.error('Watchlist toggle error', err); }
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="flex flex-col lg:flex-row gap-8 h-full pb-10"
-    >
-      <div className="flex-1 space-y-8 min-w-0">
-        <div className="glass-card p-4 md:p-5 bg-gradient-to-r from-emerald-500/10 via-cyan-500/5 to-transparent">
-          <div className="relative group">
-            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] group-focus-within:text-emerald-500 transition-colors" size={20} />
-            <input
-              type="text"
-              placeholder="Search by symbol or company name (RELIANCE, TCS, HDFC...)"
-              className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-3xl py-4 pl-14 pr-6 focus:outline-none focus:border-emerald-500/50 transition-all text-[var(--text-primary)]"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && filteredStocks.length > 0) {
-                  handleSearchPick(filteredStocks[0]);
-                }
-              }}
-            />
-          </div>
-          <div className="mt-3 flex items-center justify-between text-[11px] text-[var(--text-secondary)]">
-            <span>{filteredStocks.length} match{filteredStocks.length === 1 ? '' : 'es'} in market watch</span>
-            <span className="flex items-center gap-1"><Sparkles size={12} className="text-emerald-400" /> Smart filter active</span>
-          </div>
+    <div className="flex flex-col lg:flex-row gap-6 min-h-[calc(100vh-120px)] pb-10">
+
+      {/* ── Left Sidebar / Mobile List ── */}
+      <div className={`w-full lg:w-80 flex flex-col gap-4 ${!showListOnMobile ? 'hidden lg:flex' : 'flex'}`}>
+        <div className="relative group">
+          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-[var(--text-secondary)] transition-colors" />
+          <input
+            type="text"
+            placeholder="Search instruments..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] text-sm focus:outline-none focus:border-[var(--text-secondary)] transition-all"
+          />
         </div>
 
-        <div className="glass-card p-8 bg-gradient-to-br from-[var(--text-primary)]/[0.02] to-transparent">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-8">
-            <div className="flex items-center gap-5">
-              <div className="w-16 h-16 bg-[var(--bg-secondary)] rounded-[1.5rem] flex items-center justify-center font-bold text-2xl border border-[var(--border-color)] shadow-2xl text-[var(--text-primary)]">
-                {selectedStock.symbol[0]}
-              </div>
-              <div>
-                <div className="flex items-center gap-3 mb-1">
-                  <h3 className="text-3xl font-bold font-display text-[var(--text-primary)]">{selectedStock.symbol}</h3>
-                  <span className="px-2 py-0.5 rounded-md bg-[var(--bg-secondary)] text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest border border-[var(--border-color)]">NSE</span>
-                  <button
-                    onClick={toggleWatchlist}
-                    className={`p-2 rounded-xl transition-all ${isWatchlisted ? 'bg-emerald-500/20 text-emerald-400' : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-primary)]'}`}
-                  >
-                    <Bookmark size={18} fill={isWatchlisted ? 'currentColor' : 'none'} />
-                  </button>
-                </div>
-                <p className="text-[var(--text-secondary)] font-medium">{selectedStock.name}</p>
-              </div>
-            </div>
-            <div className="text-left md:text-right">
-              <div className="text-4xl font-mono font-bold tracking-tighter mb-1 text-[var(--text-primary)]">${selectedStock.price.toFixed(2)}</div>
-              <div className={`flex items-center md:justify-end gap-2 text-sm font-bold ${selectedStock.change > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                <div className={`p-1 rounded-full ${selectedStock.change > 0 ? 'bg-emerald-500/10' : 'bg-red-500/10'}`}>
-                  {selectedStock.change > 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                </div>
-                {selectedStock.change > 0 ? '+' : ''}{selectedStock.change}%
-                <span className="text-[var(--text-secondary)] font-normal ml-1 opacity-60">Today</span>
-              </div>
-            </div>
+        <div className="flex-1 overflow-hidden flex flex-col rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)]">
+          <div className="px-4 py-3 border-b border-[var(--border-color)] flex items-center justify-between">
+            <h3 className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-tight">Market Watch</h3>
+            <span className="text-[10px] text-[var(--text-muted)]">{filteredStocks.length} assets</span>
           </div>
-
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4">
-            <div className="flex gap-2 bg-[var(--bg-primary)] p-1 rounded-xl border border-[var(--border-color)]">
-              {[
-                { label: '1D', value: '1' },
-                { label: '1W', value: 'W' },
-                { label: '1M', value: 'M' },
-                { label: '1Y', value: '12M' },
-                { label: 'ALL', value: '60M' }
-              ].map((t) => (
-                <button
-                  key={t.label}
-                  onClick={() => setChartInterval(t.value)}
-                  className={`px-4 py-1.5 rounded-lg text-[10px] font-black tracking-widest uppercase transition-all ${chartInterval === t.value ? 'bg-[var(--text-primary)] text-[var(--bg-primary)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="flex items-center gap-2 bg-[var(--bg-primary)] p-1 rounded-xl border border-[var(--border-color)]">
-              <button
-                onClick={() => setGraphMode('simple')}
-                className={`px-3 py-1.5 rounded-lg text-[10px] font-black tracking-widest uppercase transition-all ${graphMode === 'simple' ? 'bg-emerald-500 text-black' : 'text-[var(--text-secondary)]'}`}
-              >
-                Simple Graph
-              </button>
-              <button
-                onClick={() => setGraphMode('advanced')}
-                className={`px-3 py-1.5 rounded-lg text-[10px] font-black tracking-widest uppercase transition-all ${graphMode === 'advanced' ? 'bg-[var(--text-primary)] text-[var(--bg-primary)]' : 'text-[var(--text-secondary)]'}`}
-              >
-                Advanced Graph
-              </button>
-            </div>
-          </div>
-
-          <div className="h-[520px] w-full bg-[var(--bg-primary)]/40 rounded-3xl overflow-hidden border border-[var(--border-color)] shadow-inner p-4 md:p-6">
-            {graphMode === 'simple' ? (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-                  <GraphSummary label="Start" value={`$${startPrice.toFixed(2)}`} tone="neutral" />
-                  <GraphSummary label="Current" value={`$${endPrice.toFixed(2)}`} tone="neutral" />
-                  <GraphSummary label="Change" value={`${netMove >= 0 ? '+' : ''}${netMove.toFixed(2)}%`} tone={netMove >= 0 ? 'up' : 'down'} />
-                </div>
-
-                <div className="h-[330px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={simpleChartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="currentColor" opacity={0.08} />
-                      <XAxis dataKey="label" tick={{ fill: 'var(--text-secondary)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                      <YAxis tick={{ fill: 'var(--text-secondary)', fontSize: 11 }} width={56} domain={['auto', 'auto']} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v.toFixed(0)}`} />
-                      <Tooltip
-                        formatter={(value: number) => [`$${value.toFixed(2)}`, 'Price']}
-                        labelFormatter={(label) => `Time: ${label}`}
-                        contentStyle={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', color: 'var(--text-primary)' }}
-                      />
-                      <Line type="monotone" dataKey="price" stroke="#10b981" strokeWidth={3} dot={{ r: 0 }} activeDot={{ r: 4 }} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-
-                <div className="mt-4 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-4 text-xs text-[var(--text-secondary)] space-y-1">
-                  <p><span className="text-[var(--text-primary)] font-semibold">How to read:</span> Left axis is price, bottom axis is time.</p>
-                  <p><span className="text-emerald-400 font-semibold">Upward line</span> means price increased in selected timeframe.</p>
-                  <p>Switch timeframe buttons to compare short-term vs long-term direction.</p>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="flex items-center gap-2 text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest mb-3">
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  Advanced TradingView Feed
-                </div>
-                <div className="h-[460px] rounded-2xl overflow-hidden border border-[var(--border-color)]">
-                  <TradingViewWidget key={`${selectedStock.symbol}-${chartInterval}`} symbol={selectedStock.symbol} interval={chartInterval} />
-                </div>
-              </>
-            )}
-          </div>
-
-          <div className="mt-6 p-6 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-color)]">
-            <h4 className="text-sm font-bold text-[var(--text-primary)] mb-4">Stock Comparison Table</h4>
-            <div className="overflow-x-auto rounded-xl border border-[var(--border-color)]">
-              <table className="min-w-full text-sm">
-                <thead className="bg-[var(--bg-primary)]">
-                  <tr className="text-left text-[10px] uppercase tracking-widest text-[var(--text-secondary)]">
-                    <th className="px-4 py-3">Symbol</th>
-                    <th className="px-4 py-3">Company</th>
-                    <th className="px-4 py-3">Price</th>
-                    <th className="px-4 py-3">Change</th>
-                    <th className="px-4 py-3">Market Cap</th>
-                    <th className="px-4 py-3">Avg Vol</th>
-                    <th className="px-4 py-3">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {popularStocks.map((stock) => {
-                    const meta = stockMeta[stock.symbol] || { marketCap: '-', avgVolume: '-' };
-                    const isActive = selectedStock.symbol === stock.symbol;
-
-                    return (
-                      <tr key={stock.symbol} className="border-t border-[var(--border-color)]">
-                        <td className="px-4 py-3 font-bold text-[var(--text-primary)]">{stock.symbol}</td>
-                        <td className="px-4 py-3 text-[var(--text-secondary)]">{stock.name}</td>
-                        <td className="px-4 py-3 font-mono text-[var(--text-primary)]">${stock.price.toFixed(2)}</td>
-                        <td className={`px-4 py-3 font-semibold ${stock.change >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                          {stock.change >= 0 ? '+' : ''}
-                          {stock.change.toFixed(2)}%
-                        </td>
-                        <td className="px-4 py-3 text-[var(--text-secondary)]">{meta.marketCap}</td>
-                        <td className="px-4 py-3 text-[var(--text-secondary)]">{meta.avgVolume}</td>
-                        <td className="px-4 py-3">
-                          <button
-                            onClick={() => handleSearchPick(stock)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${isActive
-                              ? 'bg-emerald-500 text-black'
-                              : 'bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)]'
-                              }`}
-                          >
-                            {isActive ? 'Selected' : 'View'}
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div className="mt-6 p-6 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-color)]">
-            <h4 className="text-sm font-bold text-[var(--text-primary)] mb-4 flex items-center gap-2">
-              <Info size={16} className="text-emerald-400" />
-              Graph Tips For Beginners
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="space-y-2">
-                <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">Trend First</p>
-                <p className="text-xs text-[var(--text-secondary)] leading-relaxed">If line goes up over time, trend is bullish. If line goes down, trend is bearish.</p>
-              </div>
-              <div className="space-y-2">
-                <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">Check Timeframe</p>
-                <p className="text-xs text-[var(--text-secondary)] leading-relaxed">Use 1D/1W for quick moves and 1M/1Y for bigger trend direction.</p>
-              </div>
-              <div className="space-y-2">
-                <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">Use Advanced Only When Needed</p>
-                <p className="text-xs text-[var(--text-secondary)] leading-relaxed">Start with Simple Graph. Move to Advanced Graph for indicators and drawings.</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-10">
-            <MarketStat label="Day Range" value="$180.15 - $184.20" />
-            <MarketStat label="Market Cap (₹)" value="19.84 Trillion" />
-            <MarketStat label="Avg Volume" value="52.41 Million" />
-            <MarketStat label="P/E Ratio" value="28.42" />
-          </div>
-        </div>
-      </div>
-
-      <div className="w-full lg:w-[460px] space-y-8 shrink-0">
-        <div className="glass-card p-8 border-emerald-500/20 bg-emerald-500/[0.02]">
-          <h3 className="text-xl font-bold mb-8 flex items-center gap-3">
-            <BarChart3 className="text-emerald-400" size={20} />
-            Execution Panel
-          </h3>
-
-          <div className="space-y-8">
-            <div className="space-y-3">
-              <div className="flex justify-between items-end">
-                <label className="text-[10px] text-[var(--text-secondary)] uppercase tracking-[0.2em] font-bold">Order Quantity</label>
-                <span className="text-[10px] text-emerald-500/50 font-mono">Max: 420</span>
-              </div>
-              <div className="grid grid-cols-[48px_minmax(0,1fr)_48px] items-center gap-3 bg-[var(--bg-primary)] rounded-2xl p-3 border border-[var(--border-color)] focus-within:border-emerald-500/30 transition-colors">
-                <button
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  className="w-12 h-12 shrink-0 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-color)] inline-flex items-center justify-center overflow-hidden hover:bg-[var(--bg-primary)] transition-colors active:scale-90"
-                >
-                  <Minus size={18} />
-                </button>
-                <input
-                  type="number"
-                  value={quantity}
-                  onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
-                  className="w-full min-w-0 bg-transparent text-center font-mono font-bold text-xl md:text-2xl focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-[var(--text-primary)]"
-                />
-                <button
-                  onClick={() => setQuantity(quantity + 1)}
-                  className="w-12 h-12 shrink-0 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-color)] inline-flex items-center justify-center overflow-hidden hover:bg-[var(--bg-primary)] transition-colors active:scale-90"
-                >
-                  <Plus size={18} />
-                </button>
-              </div>
-            </div>
-
-            <div className="bg-[var(--bg-primary)] rounded-2xl p-5 space-y-4 border border-[var(--border-color)]">
-              <div className="flex justify-between text-sm">
-                <span className="text-[var(--text-secondary)]">Order Type</span>
-                <span className="font-bold text-[var(--text-primary)]">Market Order</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-[var(--text-secondary)]">Est. Price</span>
-                <span className="font-mono text-[var(--text-primary)]">${selectedStock.price.toFixed(2)}</span>
-              </div>
-              <div className="h-px bg-[var(--border-color)]" />
-              <div className="flex justify-between items-center">
-                <span className="text-[var(--text-secondary)] text-sm">Total Value</span>
-                <span className="font-mono text-2xl text-emerald-400 font-bold tracking-tighter">${(selectedStock.price * quantity).toFixed(2)}</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <button
-                disabled={trading}
-                onClick={() => handleTrade('BUY')}
-                className="neo-button py-5 rounded-2xl bg-emerald-500 text-black font-black text-sm uppercase tracking-widest hover:bg-emerald-400 disabled:opacity-50 shadow-lg shadow-emerald-500/20"
-              >
-                Execute Buy
-              </button>
-              <button
-                disabled={trading}
-                onClick={() => handleTrade('SELL')}
-                className="neo-button py-5 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-color)] text-[var(--text-primary)] font-black text-sm uppercase tracking-widest hover:bg-[var(--bg-primary)] disabled:opacity-50"
-              >
-                Execute Sell
-              </button>
-            </div>
-
-            {message && (
-              <div className={`p-5 rounded-2xl text-xs font-medium text-center animate-in fade-in slide-in-from-top-2 duration-300 ${message.includes('Successfully') ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
-                {message}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="glass-card p-8">
-          <div className="flex items-center justify-between mb-8">
-            <h3 className="text-xl font-bold text-[var(--text-primary)]">Market Watch</h3>
-            <Clock size={16} className="text-[var(--text-secondary)]" />
-          </div>
-
-          <div className="space-y-3">
-            {filteredStocks.length === 0 && (
-              <div className="p-4 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] text-sm text-[var(--text-secondary)]">
-                No stocks found for "{search}".
-              </div>
-            )}
-
+          <div className="overflow-y-auto max-h-[500px] lg:max-h-none flex-1 custom-scrollbar">
             {filteredStocks.map((stock) => (
-              <motion.button
+              <button
                 key={stock.symbol}
-                onClick={() => handleSearchPick(stock)}
-                className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all duration-300 group ${selectedStock.symbol === stock.symbol
-                  ? 'bg-emerald-500/10 border border-emerald-500/30'
-                  : 'bg-[var(--bg-secondary)] border border-transparent hover:bg-[var(--bg-primary)] hover:border-[var(--border-color)]'
-                  }`}
+                onClick={() => { setSelectedStock(stock); setShowListOnMobile(false); }}
+                className={`w-full px-4 py-4 flex items-center justify-between border-b border-[var(--border-color)] last:border-0 hover:bg-[var(--bg-primary)] transition-all ${selectedStock.symbol === stock.symbol ? 'bg-[var(--bg-primary)] border-l-2 border-l-blue-500' : ''}`}
               >
-                <div className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xs transition-colors ${selectedStock.symbol === stock.symbol ? 'bg-emerald-500 text-black' : 'bg-[var(--bg-primary)] text-[var(--text-secondary)] group-hover:bg-[var(--bg-secondary)]'
-                    }`}>
-                    {stock.symbol[0]}
-                  </div>
-                  <div className="text-left">
-                    <div className="font-bold text-sm group-hover:text-[var(--text-primary)] transition-colors text-[var(--text-primary)]">{stock.symbol}</div>
-                    <div className="text-[9px] text-[var(--text-secondary)] uppercase tracking-widest">{stock.name.split(' ')[0]}</div>
-                  </div>
+                <div className="text-left">
+                  <p className="font-bold text-sm text-[var(--text-primary)]">{stock.symbol}</p>
+                  <p className="text-[10px] text-[var(--text-muted)] truncate max-w-[100px]">{stock.name}</p>
                 </div>
                 <div className="text-right">
-                  <div className="font-mono font-bold text-sm text-[var(--text-primary)]">${stock.price.toFixed(2)}</div>
-                  <div className={`text-[10px] font-bold ${stock.change > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                    {stock.change > 0 ? '+' : ''}{stock.change}%
-                  </div>
+                  <p className="font-mono text-sm font-bold text-[var(--text-primary)]">₹{stock.price.toLocaleString('en-IN')}</p>
+                  <p className={`text-[10px] font-bold flex items-center justify-end gap-1 ${stock.change >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                    {stock.change >= 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+                    {stock.change > 0 ? '+' : ''}{stock.change.toFixed(2)}%
+                  </p>
                 </div>
-              </motion.button>
+              </button>
             ))}
           </div>
         </div>
       </div>
-    </motion.div>
-  );
-}
 
-function GraphSummary({ label, value, tone }: { label: string; value: string; tone: 'up' | 'down' | 'neutral' }) {
-  const toneClass = tone === 'up' ? 'text-emerald-400' : tone === 'down' ? 'text-red-400' : 'text-[var(--text-primary)]';
+      {/* ── Main View: Chart & Details ── */}
+      <AnimatePresence mode="wait">
+        <div className={`flex-1 flex flex-col gap-6 ${showListOnMobile ? 'hidden lg:flex' : 'flex'}`}>
 
-  return (
-    <div className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-4 py-3">
-      <p className="text-[10px] uppercase tracking-widest text-[var(--text-secondary)] mb-1">{label}</p>
-      <p className={`font-mono font-bold text-sm ${toneClass}`}>{value}</p>
+          {/* Back Button (Mobile Only) */}
+          <button
+            onClick={() => setShowListOnMobile(true)}
+            className="lg:hidden flex items-center gap-2 text-blue-500 text-sm font-bold mb-2 p-2 rounded-lg bg-blue-500/5 hover:bg-blue-500/10 transition-colors w-fit"
+          >
+            <ChevronLeft size={16} /> Back to Market Watch
+          </button>
+
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            key={selectedStock.symbol}
+            className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] overflow-hidden shadow-xl"
+          >
+            {/* Header */}
+            <div className="px-6 py-5 border-b border-[var(--border-color)] flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-color)] shadow-sm">
+                  <BarChart3 className="text-blue-500" size={24} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-2xl font-black text-[var(--text-primary)] tracking-tight">{selectedStock.symbol}</h1>
+                    <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-500 text-[10px] font-bold border border-emerald-500/20 uppercase tracking-wider">Equity</span>
+                  </div>
+                  <p className="text-xs text-[var(--text-muted)] font-medium truncate max-w-[150px] sm:max-w-none">{selectedStock.name}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-6">
+                <div className="text-right">
+                  <p className="text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-wider mb-0.5">Live Price</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-2xl font-mono font-black text-[var(--text-primary)] tracking-tight">₹{selectedStock.price.toLocaleString('en-IN')}</p>
+                    <span className={`flex items-center gap-1 font-bold text-sm px-2 py-0.5 rounded-lg ${selectedStock.change >= 0 ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
+                      {selectedStock.change >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                      {selectedStock.change > 0 ? '+' : ''}{selectedStock.change.toFixed(2)}%
+                    </span>
+                  </div>
+                </div>
+                <button onClick={toggleWatchlist} className={`p-3 rounded-xl border transition-all ${isWatchlisted ? 'bg-amber-500/10 border-amber-500/30 text-amber-500 shadow-inner' : 'bg-[var(--bg-primary)] border-[var(--border-color)] text-[var(--text-muted)] hover:text-amber-500'}`}>
+                  <Bookmark size={20} fill={isWatchlisted ? 'currentColor' : 'none'} />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              {/* Action Bar */}
+              <div className="flex flex-wrap items-center justify-between gap-6 mb-8">
+                <div className="flex items-center p-1.5 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-color)] overflow-x-auto">
+                  {['1', 'W', 'M', '12M', '60M'].map(itv => (
+                    <button key={itv} onClick={() => setChartInterval(itv)} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${chartInterval === itv ? 'bg-blue-600 text-white shadow-lg' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}>
+                      {itv === '1' ? '1D' : itv === '12M' ? '1Y' : itv === '60M' ? '5Y' : itv}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center p-1.5 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-color)]">
+                    <button onClick={() => setGraphMode('simple')} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${graphMode === 'simple' ? 'bg-emerald-600 text-white shadow-lg' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}>
+                      Simple
+                    </button>
+                    <button onClick={() => setGraphMode('advanced')} className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${graphMode === 'advanced' ? 'bg-violet-600 text-white shadow-lg' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}>
+                      Advanced
+                    </button>
+                  </div>
+                  <div className="hidden sm:flex items-center gap-2 p-1.5 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-color)]">
+                    <Sparkles size={14} className="ml-2 text-emerald-500" />
+                    <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mr-2">AI Insights</span>
+                    <div className="h-4 w-[1px] bg-[var(--border-color)] mr-2" />
+                    <span className="text-xs font-bold text-emerald-500 pr-2">Bullish</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Chart Area */}
+              <div className="h-[300px] sm:h-[450px] w-full bg-[var(--bg-primary)] rounded-2xl border border-[var(--border-color)] p-4 relative overflow-hidden shadow-inner">
+                {graphMode === 'advanced' ? (
+                  <TradingViewWidget symbol={selectedStock.symbol} />
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={simpleChartData}>
+                      <defs>
+                        <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor={selectedStock.change >= 0 ? '#10b981' : '#f43f5e'} stopOpacity={0.1} />
+                          <stop offset="95%" stopColor={selectedStock.change >= 0 ? '#10b981' : '#f43f5e'} stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" vertical={false} opacity={0.5} />
+                      <XAxis dataKey="label" stroke="var(--text-muted)" fontSize={10} axisLine={false} tickLine={false} />
+                      <YAxis domain={['auto', 'auto']} stroke="var(--text-muted)" fontSize={10} axisLine={false} tickLine={false} tickFormatter={(val) => `₹${val}`} />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)', borderRadius: '12px', color: 'var(--text-primary)', fontSize: '12px', fontWeight: 'bold' }}
+                        itemStyle={{ color: 'var(--text-primary)' }}
+                      />
+                      <Line type="monotone" dataKey="price" stroke={selectedStock.change >= 0 ? '#10b981' : '#f43f5e'} strokeWidth={3} dot={false} animationDuration={1000} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+
+              {/* Trading & Stats Panel */}
+              <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+                <div className="p-5 rounded-2xl bg-[var(--bg-primary)] border border-[var(--border-color)] flex flex-col justify-center">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Info size={16} className="text-blue-500" />
+                    <h4 className="text-sm font-bold text-[var(--text-primary)]">Asset Fundamental</h4>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-[var(--text-muted)]">Market Cap</span>
+                      <span className="text-xs font-bold text-[var(--text-primary)]">{stockMeta[selectedStock.symbol]?.marketCap || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-[var(--text-muted)]">Avg Volume</span>
+                      <span className="text-xs font-bold text-[var(--text-primary)]">{stockMeta[selectedStock.symbol]?.avgVolume || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-[var(--text-muted)]">Sector</span>
+                      <span className="text-xs font-bold text-blue-500">Equity Market</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="lg:col-span-2 p-6 rounded-2xl bg-gradient-to-br from-blue-600/5 to-transparent border border-blue-500/20 flex flex-col sm:flex-row items-center justify-between gap-8">
+                  <div className="text-center sm:text-left">
+                    <h4 className="text-lg font-bold text-[var(--text-primary)] mb-1">Trade Execution</h4>
+                    <p className="text-xs text-[var(--text-muted)]">Instant settlement at real-time market rates.</p>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-center gap-6 w-full sm:w-auto">
+                    <div className="flex flex-col gap-1 w-full sm:w-auto">
+                      <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider text-center sm:text-left">Shares</span>
+                      <div className="flex items-center gap-3 bg-[var(--bg-primary)] p-1 rounded-xl border border-[var(--border-color)]">
+                        <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="p-2 rounded-lg hover:bg-[var(--bg-secondary)] text-[var(--text-primary)]"><Minus size={16} /></button>
+                        <input type="number" value={quantity} onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))} className="w-12 text-center bg-transparent text-sm font-bold focus:outline-none text-[var(--text-primary)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                        <button onClick={() => setQuantity(quantity + 1)} className="p-2 rounded-lg hover:bg-[var(--bg-secondary)] text-[var(--text-primary)]"><Plus size={16} /></button>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3 w-full sm:w-auto">
+                      <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} disabled={trading} onClick={() => handleTrade('BUY')}
+                        className="flex-1 sm:flex-none px-10 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 transition-all disabled:opacity-50 min-w-[120px]">
+                        BUY
+                      </motion.button>
+                      <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} disabled={trading} onClick={() => handleTrade('SELL')}
+                        className="flex-1 sm:flex-none px-10 py-3 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl shadow-lg shadow-rose-600/20 transition-all disabled:opacity-50 min-w-[120px]">
+                        SELL
+                      </motion.button>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              {message && (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className={`mt-6 p-4 rounded-xl border flex items-center justify-center gap-3 ${message.toLowerCase().includes('failed') || message.toLowerCase().includes('error') ? 'bg-rose-500/10 border-rose-500/20 text-rose-500' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'}`}>
+                  <div className={`w-2 h-2 rounded-full ${message.toLowerCase().includes('failed') || message.toLowerCase().includes('error') ? 'bg-rose-500 animate-pulse' : 'bg-emerald-500'}`} />
+                  <span className="text-sm font-bold">{message}</span>
+                </motion.div>
+              )}
+            </div>
+          </motion.div>
+        </div>
+      </AnimatePresence>
     </div>
   );
 }
-
-function MarketStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="space-y-1">
-      <p className="text-[9px] text-[var(--text-secondary)] uppercase tracking-[0.2em] font-bold">{label}</p>
-      <p className="font-mono font-bold text-[var(--text-primary)]">{value}</p>
-    </div>
-  );
-}
-
-
-
-
-
-
-
-
-

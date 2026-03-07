@@ -143,14 +143,17 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-[#0a0a0a] text-[var(--text-primary)] flex items-center justify-center p-4 relative overflow-hidden">
       {/* Background: Premium Multi-Layered Animation */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+        {/* Dark Overlay for better contrast */}
+        <div className="absolute inset-0 bg-black/40 z-[1]" />
+
         {/* Layer 1: Ambient Mesh Grid */}
         <motion.div
-          className="absolute inset-0 opacity-[0.15]"
+          className="absolute inset-0 opacity-[0.1]"
           style={{
-            backgroundImage: `radial-gradient(circle at 2px 2px, rgba(16, 185, 129, 0.2) 1px, transparent 0)`,
+            backgroundImage: `radial-gradient(circle at 2px 2px, rgba(16, 185, 129, 0.15) 1px, transparent 0)`,
             backgroundSize: '40px 40px'
           }}
           animate={{
@@ -161,11 +164,11 @@ export default function Auth() {
         />
 
         {/* Layer 2: Growth Moving Bars (Financial Trends) */}
-        <div className="absolute bottom-0 left-0 right-0 h-[400px] flex items-end justify-around px-1 opacity-20 pointer-events-none">
+        <div className="absolute bottom-0 left-0 right-0 h-[400px] flex items-end justify-around px-1 opacity-[0.12] pointer-events-none">
           {[...Array(50)].map((_, i) => (
             <motion.div
               key={i}
-              className="flex-1 mx-[1px] bg-gradient-to-t from-emerald-600/80 via-blue-500/40 to-transparent rounded-t-full"
+              className="flex-1 mx-[1px] bg-gradient-to-t from-emerald-600/60 via-blue-500/30 to-transparent rounded-t-full"
               initial={{ height: 0 }}
               animate={{
                 height: [
@@ -173,7 +176,7 @@ export default function Auth() {
                   (60 + Math.random() * 40) + "%",
                   (30 + Math.random() * 30) + "%"
                 ],
-                opacity: [0.3, 0.6, 0.3]
+                opacity: [0.2, 0.5, 0.2]
               }}
               transition={{
                 duration: 3 + Math.random() * 4,
@@ -187,7 +190,7 @@ export default function Auth() {
         </div>
 
         {/* Layer 3: Dynamic Price Action Line */}
-        <motion.svg className="absolute inset-x-0 bottom-[20%] w-full h-[300px] opacity-20" viewBox="0 0 1200 300" preserveAspectRatio="none">
+        <motion.svg className="absolute inset-x-0 bottom-[20%] w-full h-[300px] opacity-[0.1]" viewBox="0 0 1200 300" preserveAspectRatio="none">
           <motion.path
             d="M0 250 L100 220 L200 240 L300 180 L400 210 L500 150 L600 170 L700 120 L800 140 L900 80 L1000 100 L1100 50 L1200 70"
             fill="none"
@@ -216,16 +219,16 @@ export default function Auth() {
         {[...Array(20)].map((_, i) => (
           <motion.div
             key={i}
-            className="absolute w-1 h-1 bg-white/20 rounded-full"
+            className="absolute w-1 h-1 bg-white/10 rounded-full"
             initial={{
               x: Math.random() * 1200,
               y: Math.random() * 800,
-              opacity: Math.random() * 0.5
+              opacity: Math.random() * 0.3
             }}
             animate={{
               y: [null, Math.random() * 800 - 400],
               x: [null, Math.random() * 1200 - 600],
-              opacity: [0.1, 0.4, 0.1]
+              opacity: [0.05, 0.2, 0.05]
             }}
             transition={{
               duration: 15 + Math.random() * 20,

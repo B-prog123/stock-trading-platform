@@ -101,6 +101,56 @@ export default function Portfolio() {
     }
   };
 
+  // ── Periodic Refresh & Jitter ──
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPerformance(currentPerf => {
+        const nextPerf = { ...currentPerf };
+        let hasChanges = false;
+
+        Object.keys(nextPerf).forEach(symbol => {
+          const item = nextPerf[symbol];
+          // Jitter current price by +/- 0.05%
+          const jitter = (Math.random() - 0.5) * 0.1;
+          const newPrice = item.currentPrice * (1 + jitter / 100);
+          const newCurrentValue = item.quantity * newPrice;
+          const newPnl = newCurrentValue - (item.quantity * item.avgPrice);
+          const newPnlPct = (newPnl / (item.quantity * item.avgPrice)) * 100;
+
+          nextPerf[symbol] = {
+            ...item,
+            currentPrice: parseFloat(newPrice.toFixed(2)),
+            currentValue: parseFloat(newCurrentValue.toFixed(2)),
+            profitLoss: parseFloat(newPnl.toFixed(2)),
+            profitLossPercent: parseFloat(newPnlPct.toFixed(2))
+          };
+          hasChanges = true;
+        });
+
+        if (hasChanges) {
+          // Re-calculate totals
+          const perfValues = Object.values(nextPerf) as PerformanceItem[];
+          const newInvested = perfValues.reduce((acc, curr) => acc + (curr.quantity * curr.avgPrice), 0);
+          const newCurrent = perfValues.reduce((acc, curr) => acc + curr.currentValue, 0);
+          const newPnl = newCurrent - newInvested;
+          const newPnlPct = newInvested > 0 ? (newPnl / newInvested) * 100 : 0;
+
+          setTotals({
+            investedValue: parseFloat(newInvested.toFixed(2)),
+            currentValue: parseFloat(newCurrent.toFixed(2)),
+            profitLoss: parseFloat(newPnl.toFixed(2)),
+            profitLossPercent: parseFloat(newPnlPct.toFixed(2))
+          });
+        }
+
+        return nextPerf;
+      });
+    }, 3000);
+
+    const refreshInterval = setInterval(fetchPortfolio, 15000); // Fresh data every 15s
+    return () => { clearInterval(interval); clearInterval(refreshInterval); };
+  }, [performance]);
+
   const analyzePortfolio = async () => {
     setAnalyzing(true);
     try {
