@@ -29,9 +29,11 @@ export default function Navbar() {
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'portfolio', label: 'Portfolio' },
     { id: 'market', label: 'Market Watch' },
+    { id: 'sip', label: 'SIPs' },
     { id: 'market-news', label: 'News' },
     { id: 'transactions', label: 'Orders' },
     { id: 'funds', label: 'Funds' },
+    { id: 'guide', label: 'Academy' },
   ];
 
   const indexData = [

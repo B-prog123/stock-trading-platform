@@ -2,15 +2,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 import {
   BookOpen,
-  LayoutDashboard,
   LineChart,
-  Newspaper,
-  Briefcase,
-  Bookmark,
-  History,
-  Wallet,
-  Search,
-  Bell,
   Brain,
   TrendingUp,
   TrendingDown,
@@ -19,59 +11,27 @@ import {
   Info,
   MousePointer2,
   Clock3,
-  BarChart3,
-  Repeat2,
 } from 'lucide-react';
+import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
-const appSections = [
-  {
-    title: 'Dashboard',
-    icon: LayoutDashboard,
-    description: 'Overview of balance, portfolio stats, recent activity, and notifications.',
-  },
-  {
-    title: 'Market',
-    icon: LineChart,
-    description: 'Search and analyze stocks, open charts, and place manual buy/sell orders.',
-  },
-  {
-    title: 'SIP',
-    icon: Repeat2,
-    description: 'Create weekly/monthly SIPs, pause/resume/cancel them, and track execution history.',
-  },
-  {
-    title: 'Portfolio',
-    icon: Briefcase,
-    description: 'Live current value, per-stock P/L, total P/L, and SIP vs manual invested split.',
-  },
-  {
-    title: 'Transactions',
-    icon: History,
-    description: 'Complete order log with source filter (MANUAL / SIP) and CSV export.',
-  },
-  {
-    title: 'Market News',
-    icon: Newspaper,
-    description: 'Live headline feed with sentiment context for faster market awareness.',
-  },
-  {
-    title: 'Watchlist',
-    icon: Bookmark,
-    description: 'Save symbols to monitor and return to quickly.',
-  },
+const candleData = [
+  { time: '10:00', open: 150, close: 155, high: 158, low: 149 },
+  { time: '11:00', open: 155, close: 152, high: 157, low: 150 },
+  { time: '12:00', open: 152, close: 158, high: 160, low: 151 },
+  { time: '13:00', open: 158, close: 162, high: 165, low: 155 },
+  { time: '14:00', open: 162, close: 159, high: 164, low: 157 },
+  { time: '15:00', open: 159, close: 164, high: 166, low: 158 },
 ];
 
-const iconGuide = [
-  { icon: Search, label: 'Search', help: 'Find stocks by symbol or company name.' },
-  { icon: Bookmark, label: 'Bookmark', help: 'Add or remove stock from watchlist.' },
-  { icon: Bell, label: 'Bell', help: 'Shows SIP execution, completion, and failure notifications.' },
-  { icon: Wallet, label: 'Wallet', help: 'Deposit virtual funds and manage buying power.' },
-  { icon: Brain, label: 'AI', help: 'AI-generated portfolio insights.' },
-  { icon: TrendingUp, label: 'Profit', help: 'Positive return/profit trend.' },
-  { icon: TrendingDown, label: 'Loss', help: 'Negative return/loss trend.' },
-  { icon: Activity, label: 'Performance', help: 'Portfolio value and P/L analytics section.' },
-  { icon: Clock3, label: 'Schedule', help: 'SIP execution timeline and next run date.' },
-];
+// Transform for Recharts ComposedChart (Candlestick hack)
+const chartData = candleData.map((d) => ({
+  ...d,
+  bodyMin: Math.min(d.open, d.close),
+  bodyMax: Math.max(d.open, d.close),
+  bodyLength: Math.abs(d.open - d.close),
+  isBullish: d.close > d.open,
+  trendLine: (d.open + d.close) / 2 - 2,
+}));
 
 export default function HowToUse() {
   return (
@@ -81,129 +41,125 @@ export default function HowToUse() {
       transition={{ duration: 0.3 }}
       className="space-y-8 pb-10"
     >
-      <section className="glass-card p-6 md:p-8 bg-gradient-to-r from-cyan-500/10 via-emerald-500/10 to-transparent border-cyan-500/20">
-        <h2 className="text-3xl font-bold flex items-center gap-3 text-[var(--text-primary)]">
-          <BookOpen className="text-cyan-400" size={30} />
-          Guide To Stockify AI
+      <section className="rounded-2xl p-6 md:p-8 bg-gradient-to-br from-indigo-500/10 via-emerald-500/5 to-[var(--bg-secondary)] border border-[var(--border-color)]">
+        <div className="flex items-center gap-3 text-indigo-400 mb-2">
+          <BookOpen size={24} />
+          <span className="text-xs font-bold uppercase tracking-widest">Education Center</span>
+        </div>
+        <h2 className="text-3xl font-bold text-[var(--text-primary)] mb-2">
+          Stockify Academy
         </h2>
-        <p className="mt-2 text-sm text-[var(--text-secondary)]">
-          Updated guide including SIP investing, portfolio P/L, and transaction source tracking.
+        <p className="text-sm text-[var(--text-secondary)] max-w-2xl">
+          Trading is not purely intuition; it requires reading the data. Learn the core principles of market analysis to maximize your returns using Stockify's tools.
         </p>
       </section>
 
-      <section className="glass-card p-6 md:p-8">
-        <h3 className="text-xl font-bold mb-5 flex items-center gap-2">
-          <Info size={18} className="text-emerald-400" />
-          Quick Start Flow
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          {[
-            '1) Add funds from top bar',
-            '2) Explore stocks in Market',
-            '3) Create SIP in SIP tab (weekly/monthly)',
-            '4) Track P/L in Portfolio (live + total)',
-            '5) Verify order source in Transactions',
-          ].map((item) => (
-            <div key={item} className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-4 text-sm text-[var(--text-secondary)]">
-              {item}
-            </div>
-          ))}
-        </div>
-      </section>
+      {/* Chart Reading Guide */}
+      <section className="grid grid-cols-1 xl:grid-cols-2 gap-6">
 
-      <section className="glass-card p-6 md:p-8">
-        <h3 className="text-xl font-bold mb-5">Application Features</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {appSections.map((section) => {
-            const Icon = section.icon;
-            return (
-              <div key={section.title} className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-5">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400">
-                    <Icon size={18} />
-                  </div>
-                  <h4 className="font-bold text-[var(--text-primary)]">{section.title}</h4>
-                </div>
-                <p className="text-sm text-[var(--text-secondary)]">{section.description}</p>
+        <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-6">
+          <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-[var(--text-primary)]">
+            <CandlestickChart className="text-emerald-400" size={20} />
+            Reading Price Action
+          </h3>
+          <p className="text-sm text-[var(--text-secondary)] mb-6">
+            The candlestick chart is the trader's most vital tool. A green (bullish) candle means the price closed higher than it opened. A red (bearish) candle means the opposite.
+          </p>
+
+          <div className="h-64 border border-[var(--border-color)] bg-[var(--bg-primary)] rounded-xl p-4 relative">
+            <div className="absolute top-2 left-4 text-xs font-bold text-[var(--text-secondary)]">EXAMPLE CHART</div>
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={chartData} margin={{ top: 20, right: 0, bottom: 0, left: -20 }}>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.05} vertical={false} />
+                <XAxis dataKey="time" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--text-secondary)' }} />
+                <YAxis domain={['dataMin - 2', 'dataMax + 2']} axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--text-secondary)' }} />
+                <Tooltip contentStyle={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }} itemStyle={{ fontSize: 12 }} />
+
+                {/* Wicks */}
+                <Bar dataKey="high" barSize={2} fillOpacity={0}>
+                  {chartData.map((entry, index) => (
+                    <Cell key={`wick-${index}`} fill={entry.isBullish ? '#10b981' : '#f43f5e'} />
+                  ))}
+                </Bar>
+                {/* Bodies */}
+                <Bar dataKey="bodyMax" barSize={16}>
+                  {chartData.map((entry, index) => (
+                    <Cell key={`body-${index}`} fill={entry.isBullish ? '#10b981' : '#f43f5e'} />
+                  ))}
+                </Bar>
+                <Line type="monotone" dataKey="trendLine" stroke="#8b5cf6" strokeWidth={2} dot={false} strokeDasharray="3 3" name="Moving Average" />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+
+          <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-6">
+            <h3 className="text-lg font-bold mb-3 flex items-center gap-2 text-[var(--text-primary)]">
+              <Brain className="text-indigo-400" size={18} />
+              Platform AI Insights
+            </h3>
+            <p className="text-sm text-[var(--text-secondary)] mb-4">Stockify analyzes news sentiment and market momentum to label assets:</p>
+            <div className="flex gap-4">
+              <div className="flex-1 border border-emerald-500/20 bg-emerald-500/5 rounded-xl p-3 text-center">
+                <span className="block text-emerald-500 font-bold mb-1">BUY</span>
+                <span className="text-xs text-[var(--text-secondary)]">Strong upward momentum</span>
               </div>
-            );
-          })}
-        </div>
-      </section>
-
-      <section className="glass-card p-6 md:p-8">
-        <h3 className="text-xl font-bold mb-5">SIP Workflow</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-[var(--text-secondary)]">
-          <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-5">
-            <p className="font-semibold text-[var(--text-primary)] mb-2">Create SIP</p>
-            <ul className="space-y-2">
-              <li>Choose stock symbol and investment amount.</li>
-              <li>Select `WEEKLY` or `MONTHLY` frequency.</li>
-              <li>Set start date and optional end date.</li>
-              <li>Save plan from SIP page.</li>
-            </ul>
-          </div>
-          <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-5">
-            <p className="font-semibold text-[var(--text-primary)] mb-2">Execution & Tracking</p>
-            <ul className="space-y-2">
-              <li>System auto-executes due SIPs at schedule intervals.</li>
-              <li>Each execution updates wallet, portfolio, and transactions.</li>
-              <li>Execution status is logged in SIP details history.</li>
-              <li>Notifications appear for success, failure, and completion.</li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      <section className="glass-card p-6 md:p-8">
-        <h3 className="text-xl font-bold mb-5">Icon Guide</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {iconGuide.map(({ icon: Icon, label, help }) => (
-            <div key={label} className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Icon size={16} className="text-cyan-400" />
-                <span className="font-semibold text-sm text-[var(--text-primary)]">{label}</span>
+              <div className="flex-1 border border-rose-500/20 bg-rose-500/5 rounded-xl p-3 text-center">
+                <span className="block text-rose-500 font-bold mb-1">SELL</span>
+                <span className="text-xs text-[var(--text-secondary)]">Downward trend detected</span>
               </div>
-              <p className="text-xs text-[var(--text-secondary)]">{help}</p>
+              <div className="flex-1 border border-yellow-500/20 bg-yellow-500/5 rounded-xl p-3 text-center">
+                <span className="block text-yellow-500 font-bold mb-1">HOLD</span>
+                <span className="text-xs text-[var(--text-secondary)]">Consolidating price action</span>
+              </div>
             </div>
-          ))}
-        </div>
-      </section>
+          </div>
 
-      <section className="glass-card p-6 md:p-8 border-emerald-500/20 bg-emerald-500/[0.02]">
-        <h3 className="text-xl font-bold mb-5 flex items-center gap-2">
-          <CandlestickChart size={20} className="text-emerald-400" />
-          How To Read The Graph
-        </h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-5">
-            <h4 className="font-semibold mb-3 flex items-center gap-2 text-[var(--text-primary)]">
-              <BarChart3 size={16} className="text-cyan-400" />
-              Timeframe Buttons
-            </h4>
-            <ul className="text-sm text-[var(--text-secondary)] space-y-2">
-              <li>`1D`: Intraday moves</li>
-              <li>`1W`: Weekly momentum</li>
-              <li>`1M`: Swing trend</li>
-              <li>`1Y` and `ALL`: Macro direction</li>
+          <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-6">
+            <h3 className="text-lg font-bold mb-3 flex items-center gap-2 text-[var(--text-primary)]">
+              <TrendingUp className="text-cyan-400" size={18} />
+              Systematic Investing (SIP)
+            </h3>
+            <p className="text-sm text-[var(--text-secondary)] mb-4">
+              Don't try to time the market. A SIP (Systematic Investment Plan) allows you to automate your investments weekly or monthly. This averages out your buy price over time, minimizing risk.
+            </p>
+            <ul className="text-xs text-[var(--text-secondary)] space-y-2 list-disc pl-4">
+              <li>Navigate to the **SIPs** tab in the top navigation.</li>
+              <li>Pick a safe "Bluechip" stock idea or enter your own symbol.</li>
+              <li>Set a recurring amount (e.g., $500 monthly) to passively grow your wealth.</li>
             </ul>
           </div>
 
-          <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-5">
-            <h4 className="font-semibold mb-3 flex items-center gap-2 text-[var(--text-primary)]">
-              <MousePointer2 size={16} className="text-cyan-400" />
-              Practical Reading
-            </h4>
-            <ul className="text-sm text-[var(--text-secondary)] space-y-2">
-              <li>Confirm trend direction first.</li>
-              <li>Mark support and resistance zones.</li>
-              <li>Use indicators as confirmation only.</li>
-              <li>Zoom out before taking entries.</li>
-            </ul>
+        </div>
+
+      </section>
+
+      <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-5 flex items-start gap-4">
+          <div className="p-2 bg-[var(--bg-primary)] rounded-lg text-emerald-400 shrink-0"><Activity size={20} /></div>
+          <div>
+            <h4 className="font-bold text-sm text-[var(--text-primary)] mb-1">Portfolio P&L</h4>
+            <p className="text-xs text-[var(--text-secondary)]">Check your global P&L daily from the Portfolio tab to see your net ROI.</p>
+          </div>
+        </div>
+        <div className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-5 flex items-start gap-4">
+          <div className="p-2 bg-[var(--bg-primary)] rounded-lg text-blue-400 shrink-0"><Clock3 size={20} /></div>
+          <div>
+            <h4 className="font-bold text-sm text-[var(--text-primary)] mb-1">Timeframes</h4>
+            <p className="text-xs text-[var(--text-secondary)]">Use 1W or 1M chart timeframes for long term investing, and 1D for day trading.</p>
+          </div>
+        </div>
+        <div className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-5 flex items-start gap-4">
+          <div className="p-2 bg-[var(--bg-primary)] rounded-lg text-indigo-400 shrink-0"><LineChart size={20} /></div>
+          <div>
+            <h4 className="font-bold text-sm text-[var(--text-primary)] mb-1">Market Indices</h4>
+            <p className="text-xs text-[var(--text-secondary)]">Watch NIFTY 50 and SENSEX to gauge the overall health of the market.</p>
           </div>
         </div>
       </section>
+
     </motion.div>
   );
 }
