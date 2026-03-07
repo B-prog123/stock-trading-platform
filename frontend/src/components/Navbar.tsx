@@ -44,16 +44,16 @@ export default function Navbar() {
 
   return (
     <nav className="h-16 border-b border-[var(--border-color)] flex items-center justify-between px-4 lg:px-6 bg-[var(--bg-secondary)] shrink-0 z-40 relative">
-      <div className="flex items-center gap-8 h-full">
-        <div className="text-xl font-bold tracking-tight text-blue-600 dark:text-blue-500 cursor-pointer" onClick={() => setActiveTab('dashboard')}>
+      <div className="flex items-center gap-4 lg:gap-8 h-full flex-1 min-w-0 shrink">
+        <div className="text-xl font-bold tracking-tight text-blue-600 dark:text-blue-500 cursor-pointer shrink-0" onClick={() => setActiveTab('dashboard')}>
           STOCKIFY
         </div>
-        <div className="hidden md:flex items-center gap-2 h-full">
+        <div className="hidden md:flex items-center gap-1 lg:gap-2 h-full overflow-x-auto scrollbar-hide pb-0">
           {navLinks.map(link => (
             <button
               key={link.id}
               onClick={() => setActiveTab(link.id)}
-              className={`px-4 h-full text-sm font-medium border-b-2 transition-colors ${activeTab === link.id
+              className={`px-3 lg:px-4 h-full text-sm font-medium border-b-2 transition-colors shrink-0 ${activeTab === link.id
                 ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                 : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
@@ -64,7 +64,7 @@ export default function Navbar() {
         </div>
       </div>
 
-      <div className="hidden lg:flex flex-1 max-w-md mx-8">
+      <div className="hidden xl:flex flex-1 max-w-md mx-8 shrink">
         <form onSubmit={handleSearch} className="relative w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" size={16} />
           <input
