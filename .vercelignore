@@ -1,0 +1,6 @@
+node_modules
+dist
+server.ts
+stockify.db
+*.zip
+devserver.log
