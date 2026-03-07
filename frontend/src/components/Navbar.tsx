@@ -39,10 +39,22 @@ export default function Navbar() {
     { id: 'support', label: 'Support' },
   ];
 
-  const indexData = [
-    { name: 'NIFTY 50', value: '22,326.90', change: 38.45, pctChange: 0.17 },
-    { name: 'SENSEX', value: '73,665.27', change: -36.42, pctChange: -0.05 },
-  ];
+  const [indexData, setIndexData] = useState([
+    { name: 'NIFTY 50', value: 22326.90, change: 38.45, pctChange: 0.17 },
+    { name: 'SENSEX', value: 73665.27, change: -36.42, pctChange: -0.05 },
+  ]);
+
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setIndexData(prev => prev.map(idx => {
+        const jitter = (Math.random() - 0.5) * 10;
+        const newVal = idx.value + jitter;
+        const newPct = idx.pctChange + (Math.random() - 0.5) * 0.01;
+        return { ...idx, value: parseFloat(newVal.toFixed(2)), pctChange: parseFloat(newPct.toFixed(2)) };
+      }));
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <nav className="border-b border-[var(--border-color)] bg-[var(--bg-secondary)] shrink-0 z-40 relative sticky top-0">
@@ -158,13 +170,29 @@ export default function Navbar() {
                       <p className="text-xs font-bold text-[var(--text-primary)] truncate">{user?.name}</p>
                       <p className="text-[10px] text-[var(--text-muted)] truncate">{user?.email}</p>
                     </div>
-                    {['Settings', 'Activity', 'Help'].map(item => (
-                      <button key={item} onClick={() => setIsProfileOpen(false)} className="w-full px-5 py-2.5 text-xs font-bold text-[var(--text-secondary)] hover:text-blue-500 hover:bg-[var(--bg-primary)] transition-all text-left">
-                        {item}
-                      </button>
-                    ))}
+                    <button
+                      onClick={() => { setActiveTab('profile-settings'); setIsProfileOpen(false); }}
+                      className="w-full px-5 py-2.5 text-xs font-bold text-[var(--text-secondary)] hover:text-blue-500 hover:bg-[var(--bg-primary)] transition-all text-left"
+                    >
+                      My Profile
+                    </button>
+                    <button
+                      onClick={() => { setActiveTab('preferences'); setIsProfileOpen(false); }}
+                      className="w-full px-5 py-2.5 text-xs font-bold text-[var(--text-secondary)] hover:text-blue-500 hover:bg-[var(--bg-primary)] transition-all text-left"
+                    >
+                      Preferences
+                    </button>
+                    <button
+                      onClick={() => { setIsProfileOpen(false); }}
+                      className="w-full px-5 py-2.5 text-xs font-bold text-[var(--text-secondary)] hover:text-blue-500 hover:bg-[var(--bg-primary)] transition-all text-left"
+                    >
+                      Activity Log
+                    </button>
                     <div className="my-2 border-t border-[var(--border-color)]" />
-                    <button onClick={logout} className="w-full px-5 py-3 text-xs font-black text-rose-500 hover:bg-rose-500/5 transition-all text-left uppercase tracking-widest">
+                    <button
+                      onClick={logout}
+                      className="w-full px-5 py-3 text-xs font-black text-rose-500 hover:bg-rose-500/5 transition-all text-left uppercase tracking-widest border-t border-[var(--border-color)] mt-2"
+                    >
                       Sign Out
                     </button>
                   </motion.div>

@@ -14,6 +14,7 @@ export default function MobileNav({ activeTab, setActiveTab }: MobileNavProps) {
     { id: 'sip', label: 'SIP', icon: Repeat2 },
     { id: 'portfolio', label: 'Portfolio', icon: Briefcase },
     { id: 'watchlist', label: 'Watch', icon: Bookmark },
+    { id: 'support', label: 'Help', icon: BookOpen },
   ];
 
   return (
