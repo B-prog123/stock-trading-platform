@@ -27,11 +27,11 @@ export const getAIRecommendations = async (): Promise<StockRecommendation[]> => 
   } catch (error) {
     console.error("AI Recommendations error:", error);
     return [
-      { symbol: "AAPL", name: "Apple Inc.", reasoning: "Strong earnings report and new product lineup.", riskScore: 4, trend: "bullish" },
-      { symbol: "MSFT", name: "Microsoft Corp.", reasoning: "Continued growth in cloud services and AI integration.", riskScore: 3, trend: "bullish" },
-      { symbol: "TSLA", name: "Tesla Inc.", reasoning: "Volatility expected due to production delays.", riskScore: 8, trend: "bearish" },
-      { symbol: "NVDA", name: "NVIDIA Corp.", reasoning: "High demand for AI chips driving revenue.", riskScore: 5, trend: "bullish" },
-      { symbol: "AMZN", name: "Amazon.com Inc.", reasoning: "E-commerce sales steady, AWS growth slowing.", riskScore: 4, trend: "bullish" }
+      { symbol: "RELIANCE", name: "Reliance Ind", reasoning: "Strong earnings report and new product lineup.", riskScore: 4, trend: "bullish" },
+      { symbol: "TCS", name: "Tata Consultancy", reasoning: "Continued growth in cloud services and AI integration.", riskScore: 3, trend: "bullish" },
+      { symbol: "HDFCBANK", name: "HDFC Bank", reasoning: "Volatility expected due to margin pressures.", riskScore: 8, trend: "bearish" },
+      { symbol: "INFY", name: "Infosys Ltd.", reasoning: "High demand for digital transformation services.", riskScore: 5, trend: "bullish" },
+      { symbol: "ICICIBANK", name: "ICICI Bank", reasoning: "Strong credit growth and asset quality.", riskScore: 4, trend: "bullish" }
     ];
   }
 };

@@ -25,21 +25,21 @@ interface SimpleChartPoint {
 }
 
 const popularStocks: StockQuote[] = [
-  { symbol: 'AAPL', name: 'Apple Inc.', price: 182.63, change: 1.25 },
-  { symbol: 'TSLA', name: 'Tesla, Inc.', price: 202.64, change: -2.41 },
-  { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 726.13, change: 4.82 },
-  { symbol: 'MSFT', name: 'Microsoft Corp.', price: 409.72, change: 0.85 },
-  { symbol: 'GOOGL', name: 'Alphabet Inc.', price: 147.22, change: -0.12 },
-  { symbol: 'AMZN', name: 'Amazon.com Inc.', price: 174.42, change: 1.15 },
+  { symbol: 'RELIANCE', name: 'Reliance Industries', price: 2950.25, change: 1.25 },
+  { symbol: 'TCS', name: 'Tata Consultancy Services', price: 4120.64, change: -0.41 },
+  { symbol: 'HDFCBANK', name: 'HDFC Bank Ltd.', price: 1450.13, change: 2.82 },
+  { symbol: 'INFY', name: 'Infosys Limited', price: 1680.72, change: 0.85 },
+  { symbol: 'ICICIBANK', name: 'ICICI Bank Ltd.', price: 1050.22, change: -0.12 },
+  { symbol: 'SBIN', name: 'State Bank of India', price: 780.42, change: 1.15 },
 ];
 
 const stockMeta: Record<string, StockMeta> = {
-  AAPL: { marketCap: '2.84T', avgVolume: '52.4M' },
-  TSLA: { marketCap: '0.64T', avgVolume: '91.2M' },
-  NVDA: { marketCap: '1.79T', avgVolume: '48.8M' },
-  MSFT: { marketCap: '3.02T', avgVolume: '24.1M' },
-  GOOGL: { marketCap: '1.84T', avgVolume: '29.5M' },
-  AMZN: { marketCap: '1.81T', avgVolume: '41.7M' },
+  RELIANCE: { marketCap: '19.84T', avgVolume: '5.4M' },
+  TCS: { marketCap: '14.64T', avgVolume: '2.2M' },
+  HDFCBANK: { marketCap: '11.79T', avgVolume: '18.8M' },
+  INFY: { marketCap: '6.02T', avgVolume: '8.1M' },
+  ICICIBANK: { marketCap: '7.84T', avgVolume: '15.5M' },
+  SBIN: { marketCap: '6.81T', avgVolume: '21.7M' },
 };
 
 const intervalSeeds: Record<string, { labels: string[]; movement: number[] }> = {
@@ -237,7 +237,7 @@ export default function Market() {
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] group-focus-within:text-emerald-500 transition-colors" size={20} />
             <input
               type="text"
-              placeholder="Search by symbol or company name (AAPL, Tesla, NVIDIA...)"
+              placeholder="Search by symbol or company name (RELIANCE, TCS, HDFC...)"
               className="w-full bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-3xl py-4 pl-14 pr-6 focus:outline-none focus:border-emerald-500/50 transition-all text-[var(--text-primary)]"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -263,7 +263,7 @@ export default function Market() {
               <div>
                 <div className="flex items-center gap-3 mb-1">
                   <h3 className="text-3xl font-bold font-display text-[var(--text-primary)]">{selectedStock.symbol}</h3>
-                  <span className="px-2 py-0.5 rounded-md bg-[var(--bg-secondary)] text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest border border-[var(--border-color)]">NASDAQ</span>
+                  <span className="px-2 py-0.5 rounded-md bg-[var(--bg-secondary)] text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-widest border border-[var(--border-color)]">NSE</span>
                   <button
                     onClick={toggleWatchlist}
                     className={`p-2 rounded-xl transition-all ${isWatchlisted ? 'bg-emerald-500/20 text-emerald-400' : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-primary)]'}`}
@@ -399,11 +399,10 @@ export default function Market() {
                         <td className="px-4 py-3">
                           <button
                             onClick={() => handleSearchPick(stock)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                              isActive
+                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${isActive
                                 ? 'bg-emerald-500 text-black'
                                 : 'bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-primary)]'
-                            }`}
+                              }`}
                           >
                             {isActive ? 'Selected' : 'View'}
                           </button>
@@ -439,7 +438,7 @@ export default function Market() {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-10">
             <MarketStat label="Day Range" value="$180.15 - $184.20" />
-            <MarketStat label="Market Cap" value="2.84 Trillion" />
+            <MarketStat label="Market Cap (₹)" value="19.84 Trillion" />
             <MarketStat label="Avg Volume" value="52.41 Million" />
             <MarketStat label="P/E Ratio" value="28.42" />
           </div>
@@ -539,16 +538,14 @@ export default function Market() {
               <motion.button
                 key={stock.symbol}
                 onClick={() => handleSearchPick(stock)}
-                className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all duration-300 group ${
-                  selectedStock.symbol === stock.symbol
+                className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all duration-300 group ${selectedStock.symbol === stock.symbol
                     ? 'bg-emerald-500/10 border border-emerald-500/30'
                     : 'bg-[var(--bg-secondary)] border border-transparent hover:bg-[var(--bg-primary)] hover:border-[var(--border-color)]'
-                }`}
+                  }`}
               >
                 <div className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xs transition-colors ${
-                    selectedStock.symbol === stock.symbol ? 'bg-emerald-500 text-black' : 'bg-[var(--bg-primary)] text-[var(--text-secondary)] group-hover:bg-[var(--bg-secondary)]'
-                  }`}>
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xs transition-colors ${selectedStock.symbol === stock.symbol ? 'bg-emerald-500 text-black' : 'bg-[var(--bg-primary)] text-[var(--text-secondary)] group-hover:bg-[var(--bg-secondary)]'
+                    }`}>
                     {stock.symbol[0]}
                   </div>
                   <div className="text-left">

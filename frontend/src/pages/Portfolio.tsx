@@ -128,14 +128,14 @@ export default function Portfolio() {
 
   const getSector = (symbol: string) => {
     const sectors: Record<string, string> = {
-      AAPL: 'Technology',
-      TSLA: 'Consumer Cyclical',
-      NVDA: 'Technology',
-      MSFT: 'Technology',
-      GOOGL: 'Communication Services',
-      AMZN: 'Consumer Cyclical',
-      META: 'Communication Services',
-      NFLX: 'Communication Services',
+      RELIANCE: 'Energy',
+      TCS: 'Technology',
+      HDFCBANK: 'Financial Services',
+      INFY: 'Technology',
+      ICICIBANK: 'Financial Services',
+      SBIN: 'Financial Services',
+      ITC: 'Consumer Defensive',
+      LARSEN: 'Industrials',
     };
     return sectors[symbol] || 'Other';
   };

@@ -4,7 +4,7 @@ import { motion } from 'motion/react';
 import { Mail, Lock, User, ArrowRight, LineChart, TrendingUp } from 'lucide-react';
 import { apiUrl } from '../lib/api';
 
-const tickerTape = ['AAPL +1.25%', 'NVDA +4.82%', 'TSLA -2.41%', 'MSFT +0.85%', 'AMZN +1.15%', 'GOOGL -0.12%'];
+const tickerTape = ['RELIANCE +1.25%', 'TCS -0.41%', 'HDFCBANK +2.82%', 'INFY +0.85%', 'ICICIBANK -0.12%', 'SBIN +1.15%'];
 
 export default function Auth() {
   const { login } = useAuth();

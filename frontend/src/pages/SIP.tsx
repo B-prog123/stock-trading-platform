@@ -37,7 +37,7 @@ interface SIPSummary {
   profitLoss: number;
 }
 
-const quickSymbols = ['AAPL', 'TSLA', 'NVDA', 'MSFT', 'GOOGL', 'AMZN'];
+const quickSymbols = ['RELIANCE', 'TCS', 'HDFCBANK', 'INFY', 'ICICIBANK', 'SBIN'];
 
 export default function SIP() {
   const { token, logout, addNotification } = useAuth();
@@ -51,7 +51,7 @@ export default function SIP() {
   const [lastNotifId, setLastNotifId] = useState(0);
 
   const [form, setForm] = useState({
-    stockSymbol: 'AAPL',
+    stockSymbol: 'RELIANCE',
     investmentAmount: 500,
     frequency: 'MONTHLY' as 'WEEKLY' | 'MONTHLY',
     startDate: new Date().toISOString().split('T')[0],
@@ -145,7 +145,7 @@ export default function SIP() {
 
   const resetForm = () => {
     setForm({
-      stockSymbol: 'AAPL',
+      stockSymbol: 'RELIANCE',
       investmentAmount: 500,
       frequency: 'MONTHLY',
       startDate: new Date().toISOString().split('T')[0],
@@ -418,9 +418,9 @@ export default function SIP() {
                       <td className="px-4 py-3">{sip.nextRunDate || '-'}</td>
                       <td className="px-4 py-3">
                         <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${sip.status === 'ACTIVE' ? 'bg-emerald-500/15 text-emerald-400' :
-                            sip.status === 'PAUSED' ? 'bg-amber-500/15 text-amber-400' :
-                              sip.status === 'COMPLETED' ? 'bg-cyan-500/15 text-cyan-400' :
-                                'bg-rose-500/15 text-rose-400'
+                          sip.status === 'PAUSED' ? 'bg-amber-500/15 text-amber-400' :
+                            sip.status === 'COMPLETED' ? 'bg-cyan-500/15 text-cyan-400' :
+                              'bg-rose-500/15 text-rose-400'
                           }`}>
                           {sip.status}
                         </span>
