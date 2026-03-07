@@ -160,62 +160,54 @@ export default function Auth() {
           transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
         />
 
-        {/* Layer 2: Dynamic Gradient Orbs */}
-        <motion.div
-          className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-blue-600/10 blur-[130px] rounded-full"
-          animate={{
-            x: [0, 100, 0],
-            y: [0, 50, 0],
-            scale: [1, 1.2, 1],
-          }}
-          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div
-          className="absolute bottom-[-10%] right-[-10%] w-[55%] h-[55%] bg-emerald-500/10 blur-[130px] rounded-full"
-          animate={{
-            x: [0, -80, 0],
-            y: [0, -60, 0],
-            scale: [1, 1.1, 1],
-          }}
-          transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div
-          className="absolute top-[20%] right-[10%] w-[30%] h-[30%] bg-violet-600/5 blur-[100px] rounded-full"
-          animate={{
-            x: [0, -50, 0],
-            y: [0, 100, 0],
-          }}
-          transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
-        />
+        {/* Layer 2: Growth Moving Bars (Financial Trends) */}
+        <div className="absolute bottom-0 left-0 right-0 h-[400px] flex items-end justify-around px-1 opacity-20 pointer-events-none">
+          {[...Array(50)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="flex-1 mx-[1px] bg-gradient-to-t from-emerald-600/80 via-blue-500/40 to-transparent rounded-t-full"
+              initial={{ height: 0 }}
+              animate={{
+                height: [
+                  (20 + Math.random() * 50) + "%",
+                  (60 + Math.random() * 40) + "%",
+                  (30 + Math.random() * 30) + "%"
+                ],
+                opacity: [0.3, 0.6, 0.3]
+              }}
+              transition={{
+                duration: 3 + Math.random() * 4,
+                repeat: Infinity,
+                repeatType: "reverse",
+                delay: i * 0.08,
+                ease: "easeInOut"
+              }}
+            />
+          ))}
+        </div>
 
-        {/* Layer 3: Shifting Mesh Lines */}
-        <motion.svg className="absolute inset-0 w-full h-full opacity-20" viewBox="0 0 1200 800" preserveAspectRatio="none">
+        {/* Layer 3: Dynamic Price Action Line */}
+        <motion.svg className="absolute inset-x-0 bottom-[20%] w-full h-[300px] opacity-20" viewBox="0 0 1200 300" preserveAspectRatio="none">
           <motion.path
-            d="M0 400 Q300 350 600 400 T1200 400"
+            d="M0 250 L100 220 L200 240 L300 180 L400 210 L500 150 L600 170 L700 120 L800 140 L900 80 L1000 100 L1100 50 L1200 70"
             fill="none"
-            stroke="url(#grad1)"
-            strokeWidth="1.5"
-            animate={{ d: ["M0 400 Q300 350 600 400 T1200 400", "M0 400 Q300 450 600 400 T1200 400", "M0 400 Q300 350 600 400 T1200 400"] }}
-            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-          />
-          <motion.path
-            d="M0 500 Q300 550 600 500 T1200 500"
-            fill="none"
-            stroke="url(#grad2)"
-            strokeWidth="1.5"
-            animate={{ d: ["M0 500 Q300 550 600 500 T1200 500", "M0 500 Q300 450 600 500 T1200 500", "M0 500 Q300 550 600 500 T1200 500"] }}
-            transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+            stroke="url(#lineGrad)"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            animate={{
+              d: [
+                "M0 250 L100 220 L200 240 L300 180 L400 210 L500 150 L600 170 L700 120 L800 140 L900 80 L1000 100 L1100 50 L1200 70",
+                "M0 240 L100 230 L200 220 L300 190 L400 200 L500 160 L600 155 L700 130 L800 125 L900 90 L1000 85 L1100 60 L1200 55",
+                "M0 250 L100 220 L200 240 L300 180 L400 210 L500 150 L600 170 L700 120 L800 140 L900 80 L1000 100 L1100 50 L1200 70"
+              ]
+            }}
+            transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
           />
           <defs>
-            <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#3b82f6" stopOpacity="0" />
-              <stop offset="50%" stopColor="#3b82f6" stopOpacity="0.5" />
-              <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
-            </linearGradient>
-            <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#10b981" stopOpacity="0" />
-              <stop offset="50%" stopColor="#10b981" stopOpacity="0.5" />
-              <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
+            <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#3b82f6" />
+              <stop offset="100%" stopColor="#10b981" />
             </linearGradient>
           </defs>
         </motion.svg>
