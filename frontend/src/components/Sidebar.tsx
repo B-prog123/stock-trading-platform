@@ -33,7 +33,12 @@ export default function Sidebar({ activeTab, setActiveTab, isMobile = false, onC
       className="w-64 bg-[var(--bg-secondary)] border-r border-[var(--border-color)] flex flex-col h-full"
     >
       <div className="p-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">Stockify</h1>
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-gradient-to-br from-emerald-400 to-cyan-400 rounded-xl flex items-center justify-center shadow-sm shadow-emerald-500/20">
+            <LineChart className="text-white" size={18} />
+          </div>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">Stockify</h1>
+        </div>
         <button
           onClick={onClose}
           className="p-2 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-secondary)]"
@@ -54,11 +59,10 @@ export default function Sidebar({ activeTab, setActiveTab, isMobile = false, onC
               setActiveTab(item.id);
               if (onClose) onClose();
             }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-              activeTab === item.id
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === item.id
                 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                 : 'text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] hover:text-[var(--text-primary)]'
-            }`}
+              }`}
           >
             <item.icon size={20} />
             <span className="font-medium">{item.label}</span>

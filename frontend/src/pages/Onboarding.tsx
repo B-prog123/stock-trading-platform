@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { TrendingUp, Shield, Zap, BarChart3, ArrowRight, CheckCircle2, Wallet, Sparkles } from 'lucide-react';
+import { TrendingUp, Shield, Zap, BarChart3, ArrowRight, CheckCircle2, Wallet, LineChart } from 'lucide-react';
 
 interface OnboardingProps {
   onComplete: () => void;
@@ -10,7 +10,7 @@ const steps = [
   {
     title: "Welcome to Stockify",
     description: "Your professional-grade stock trading and portfolio management platform. Let's get you started with a quick tour.",
-    icon: <Sparkles className="text-emerald-500" size={48} />,
+    icon: <LineChart className="text-emerald-500" size={48} />,
     color: "emerald"
   },
   {
@@ -54,13 +54,13 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         className="bg-[var(--card-bg)] border border-[var(--border-color)] w-full max-w-2xl rounded-3xl overflow-hidden shadow-2xl"
       >
         <div className="relative h-2 bg-[var(--hover-bg)]">
-          <motion.div 
+          <motion.div
             className="absolute inset-y-0 left-0 bg-emerald-500"
             initial={{ width: 0 }}
             animate={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
@@ -81,7 +81,7 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
               <div className={`p-6 rounded-3xl bg-${step.color}-500/10`}>
                 {step.icon}
               </div>
-              
+
               <div className="space-y-2">
                 <h2 className="text-3xl font-bold tracking-tight">{step.title}</h2>
                 <p className="text-lg text-[var(--text-secondary)] leading-relaxed max-w-md">
@@ -115,11 +115,10 @@ export default function Onboarding({ onComplete }: OnboardingProps) {
           <div className="mt-12 flex items-center justify-between">
             <div className="flex gap-1.5">
               {steps.map((_, i) => (
-                <div 
-                  key={i} 
-                  className={`h-1.5 rounded-full transition-all duration-300 ${
-                    i === currentStep ? 'w-8 bg-emerald-500' : 'w-2 bg-[var(--border-color)]'
-                  }`}
+                <div
+                  key={i}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${i === currentStep ? 'w-8 bg-emerald-500' : 'w-2 bg-[var(--border-color)]'
+                    }`}
                 />
               ))}
             </div>

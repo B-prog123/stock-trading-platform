@@ -1,7 +1,7 @@
 ﻿import React, { useState } from 'react';
 import { useAuth } from '../App';
 import { motion } from 'motion/react';
-import { Mail, Lock, User, ArrowRight, Sparkles, TrendingUp } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, LineChart, TrendingUp } from 'lucide-react';
 import { apiUrl } from '../lib/api';
 
 const tickerTape = ['AAPL +1.25%', 'NVDA +4.82%', 'TSLA -2.41%', 'MSFT +0.85%', 'AMZN +1.15%', 'GOOGL -0.12%'];
@@ -177,7 +177,7 @@ export default function Auth() {
       >
         <div className="text-center mb-10">
           <div className="w-16 h-16 bg-gradient-to-br from-emerald-400 to-cyan-400 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-emerald-500/20">
-            <Sparkles className="text-white" size={32} />
+            <LineChart className="text-white" size={32} />
           </div>
           <h1 className="text-3xl font-bold mb-2">Stockify AI</h1>
           <p className="text-[var(--text-secondary)] flex items-center justify-center gap-2">
