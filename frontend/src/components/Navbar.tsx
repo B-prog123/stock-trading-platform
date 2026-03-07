@@ -4,7 +4,8 @@ import {
   Sun,
   Moon,
   Trash2,
-  Search
+  Search,
+  TrendingUp
 } from 'lucide-react';
 import { useAuth } from '../App';
 import { AnimatePresence, motion } from 'motion/react';
@@ -47,12 +48,25 @@ export default function Navbar() {
       {/* Top row: Brand + Search + Indices + Icons */}
       <div className="h-14 flex items-center justify-between px-4 lg:px-6 gap-4">
         {/* Brand */}
-        <div
-          className="text-xl font-bold tracking-tight text-blue-600 dark:text-blue-500 cursor-pointer shrink-0"
+        {/* Animated Brand Logo */}
+        <motion.div
+          key={user?.id || 'guest'} // Add key to force re-render when user changes
+          className="flex items-center gap-1.5 cursor-pointer shrink-0 group"
           onClick={() => setActiveTab('dashboard')}
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
         >
-          STOCKIFY
-        </div>
+          <motion.div
+            animate={{ y: [0, -3, 0] }}
+            transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+            className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center shadow-md shadow-blue-500/20"
+          >
+            <TrendingUp size={14} className="text-white" strokeWidth={2.5} />
+          </motion.div>
+          <span className="text-lg font-extrabold tracking-tight bg-gradient-to-r from-blue-500 to-emerald-500 bg-clip-text text-transparent">
+            STOCKIFY
+          </span>
+        </motion.div>
 
         {/* Search Bar (center) */}
         <form onSubmit={handleSearch} className="relative flex-1 max-w-sm hidden md:block">
@@ -192,8 +206,8 @@ export default function Navbar() {
             key={link.id}
             onClick={() => setActiveTab(link.id)}
             className={`px-3 lg:px-4 h-full text-xs font-semibold border-b-2 transition-colors shrink-0 whitespace-nowrap ${activeTab === link.id
-                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+              ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+              : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
           >
             {link.label}

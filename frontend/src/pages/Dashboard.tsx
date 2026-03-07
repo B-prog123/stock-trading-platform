@@ -18,7 +18,7 @@ const chartData = [
 ];
 
 export default function Dashboard() {
-  const { token, user, logout, setActiveTab, setSelectedSymbol } = useAuth();
+  const { token, user, logout, setActiveTab, setSelectedSymbol, refreshUser } = useAuth();
   const [recommendations, setRecommendations] = useState<StockRecommendation[]>([]);
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,6 +47,14 @@ export default function Dashboard() {
 
     fetchData();
   }, [token]);
+
+  // Auto-refresh user balance every 10 seconds to pick up trade changes
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refreshUser();
+    }, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   const totalValue = portfolio.reduce((acc, item) => acc + item.quantity * item.avgPrice, 0);
 
