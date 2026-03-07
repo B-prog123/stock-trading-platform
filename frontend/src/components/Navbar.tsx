@@ -28,6 +28,7 @@ export default function Navbar() {
   const navLinks = [
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'portfolio', label: 'Portfolio' },
+    { id: 'watchlist', label: 'Watchlist' },
     { id: 'market', label: 'Market Watch' },
     { id: 'sip', label: 'SIPs' },
     { id: 'market-news', label: 'News' },

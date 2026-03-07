@@ -250,10 +250,6 @@ export default function App() {
         <Navbar />
 
         <div className="flex flex-1 overflow-hidden min-h-0 w-full z-10">
-          <div className="w-[320px] lg:w-[380px] hidden md:flex flex-col shrink-0">
-            <Watchlist />
-          </div>
-
           <main className="flex-1 max-w-full overflow-x-hidden overflow-y-auto bg-[var(--bg-primary)] p-4 md:p-8 pb-24 lg:pb-8 relative scrollbar-hide">
             {showAppBrief && (
               <div className="mb-6 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 md:p-5">
@@ -289,6 +285,7 @@ export default function App() {
                 {activeTab === 'market-news' && <MarketNewsPage />}
                 {activeTab === 'funds' && <Funds />}
                 {activeTab === 'sip' && <SIP />}
+                {activeTab === 'watchlist' && <div className="h-[calc(100vh-140px)] w-full max-w-xl mx-auto rounded-xl overflow-hidden border border-[var(--border-color)] shadow-sm"><Watchlist /></div>}
                 {activeTab === 'portfolio' && <Portfolio />}
                 {activeTab === 'transactions' && <Transactions />}
                 {activeTab === 'profile-settings' && <ProfileSettings />}
