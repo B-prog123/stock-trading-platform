@@ -1,4 +1,4 @@
-﻿import express from "express";
+import express from "express";
 import cors from "cors";
 import axios from "axios";
 import bcrypt from "bcryptjs";
@@ -94,20 +94,32 @@ const SipNotification = mongoose.model("SipNotification", SipNotificationSchema)
 
 const toObjectId = (id: string) => new Types.ObjectId(id);
 
-const limitedChatSolutions = [
-  { prompt: "How do I start trading safely?", keywords: ["start trading", "beginner", "new to trading", "first trade"], answer: "Use small position sizes (1-2% risk per trade), set stop-loss before entry, and avoid leverage until you have a tested strategy." },
-  { prompt: "How should I manage risk?", keywords: ["risk", "stop loss", "drawdown", "loss"], answer: "Define max loss per trade, set a daily loss cap, and reduce size after 2-3 losing trades to protect capital." },
-  { prompt: "How to diversify my portfolio?", keywords: ["diversify", "portfolio", "allocation", "concentration"], answer: "Spread exposure across sectors, avoid oversized single positions, and rebalance monthly to keep risk balanced." },
-  { prompt: "When should I buy or sell?", keywords: ["buy", "sell", "entry", "exit"], answer: "Buy only when your setup confirms trend and risk-reward is at least 1:2. Sell when stop-loss is hit or your target thesis is completed." },
-  { prompt: "How do I read market trend?", keywords: ["trend", "market", "momentum", "news"], answer: "Check higher timeframe direction first, confirm with volume, then align entries with trend instead of predicting reversals." },
+const STOCKIFY_SYSTEM_PROMPT = "You are Stockify AI, an expert stock market assistant. Help users with: stock trading strategies, technical analysis (RSI, MACD, candlesticks, moving averages), fundamental analysis (P/E ratio, EPS), portfolio management, diversification, risk management, SIP investments, Indian markets (NSE, BSE, NIFTY 50, SENSEX), and Stockify platform features (Watchlist, Portfolio, Market Watch, SIPs, Funds, Orders). Give clear, educational, actionable answers.";
+
+const stockTradingFAQ: { keywords: string[]; answer: string }[] = [
+  { keywords: ["start trading", "begin", "beginner", "new to", "first trade"], answer: "To start trading: 1) Add funds via Funds tab. 2) Research in Market Watch. 3) Add to Watchlist. 4) Start small (1-2% per trade). 5) Always set stop-loss. Visit Academy tab to learn charts." },
+  { keywords: ["risk", "stop loss", "drawdown", "manage risk", "loss"], answer: "Risk management: Risk max 1-2% per trade. Set stop-loss before entering. Diversify sectors. Never trade emotionally. Track P&L in Portfolio tab." },
+  { keywords: ["diversify", "allocation", "concentration", "spread"], answer: "Invest across Tech, Finance, Energy, FMCG. Max 10-15% in one stock. Use SIPs for systematic multi-stock investing. Review monthly in Portfolio tab." },
+  { keywords: ["sip", "systematic investment", "monthly invest", "auto invest", "rupee cost"], answer: "SIP invests fixed amounts periodically, reducing risk via rupee cost averaging. Go to SIPs tab, enter stock symbol, amount, frequency, start date to create one." },
+  { keywords: ["candlestick", "candle", "chart pattern"], answer: "Candlesticks: Green = price up, Red = price down. Key patterns: Doji (indecision), Hammer (reversal), Engulfing (trend change). See Academy tab for tutorials." },
+  { keywords: ["buy", "when to buy", "entry point", "purchase"], answer: "Buy signals: 1) Price breaks resistance with volume. 2) RSI below 30 (oversold). 3) Golden Cross (50MA above 200MA). Check Market Watch for live prices." },
+  { keywords: ["sell", "when to sell", "exit", "take profit"], answer: "Sell when: 1) Price target achieved. 2) Stop-loss triggered. 3) Fundamentals worsen. 4) RSI above 70 (overbought). Always plan exit before entry." },
+  { keywords: ["nifty", "sensex", "index", "market index", "benchmark"], answer: "NIFTY 50 = top 50 NSE companies. SENSEX = top 30 BSE companies. Market health benchmarks. Track live on Dashboard." },
+  { keywords: ["pe ratio", "p/e", "valuation", "price to earnings"], answer: "P/E = Price / EPS. Lower P/E may mean undervalued. Sector avg: FMCG ~50, Banks ~15-20, IT ~25-30. Compare within same sector only." },
+  { keywords: ["moving average", "sma", "ema", "50 day", "200 day", "golden cross", "death cross"], answer: "Golden Cross (50MA above 200MA) = bullish. Death Cross (50MA below 200MA) = bearish. EMA responds faster than SMA." },
+  { keywords: ["rsi", "relative strength", "overbought", "oversold"], answer: "RSI: Above 70 = overbought (consider selling). Below 30 = oversold (consider buying). 40-60 = neutral. Confirm with price action." },
+  { keywords: ["macd", "momentum", "signal line"], answer: "MACD: Bullish when crosses above signal line. Bearish when crosses below. Use alongside RSI for confirmation." },
+  { keywords: ["watchlist", "track stock", "watch list"], answer: "In Watchlist tab, search by symbol (RELIANCE, TCS), add to track real-time prices. Click any stock to open Market Watch for charts and trading." },
+  { keywords: ["balance", "wallet", "funds", "deposit", "add money"], answer: "Add funds via Funds tab. Balance shows on Dashboard as Available Margin. Buying decreases balance, selling increases it automatically." },
+  { keywords: ["order", "transaction", "history", "orders"], answer: "All buy/sell orders are logged in Orders tab with symbol, quantity, price, and type (BUY/SELL or SIP source)." },
+  { keywords: ["portfolio", "holdings", "profit", "loss", "pnl"], answer: "Portfolio tab shows holdings, average price, current value, and P&L. Dashboard shows total portfolio value and balance combined." },
 ];
-const getLimitedChatReply = (rawMessage: string) => {
-  const msg = rawMessage.toLowerCase();
-  const match = limitedChatSolutions.find((i) => i.keywords.some((k) => msg.includes(k)));
+
+const getSmartFallback = (message: string): string => {
+  const msg = message.toLowerCase();
+  const match = stockTradingFAQ.find(item => item.keywords.some(k => msg.includes(k)));
   if (match) return match.answer;
-  return `I support only limited questions right now. Ask one of these:
-${limitedChatSolutions.map((i, idx) => `${idx + 1}. ${i.prompt}`).join("
-")}`;
+  return "I can help with stock trading, chart analysis, portfolio management, SIP investments, and Stockify platform features. Try asking: 'How to read candlestick charts?', 'What is RSI?', 'How do I create a SIP?', or 'When should I buy a stock?'";
 };
 
 const authenticateToken = (req: any, res: any, next: any) => {
@@ -132,7 +144,7 @@ const executeDueSip = async (sip: any) => {
     sip.status = "COMPLETED";
     sip.nextRunDate = null;
     await sip.save();
-    await createSipNotification(String(sip.userId), String(sip._id), "COMPLETED", `SIP for ${sip.stockSymbol} is completed.`);
+    await createSipNotification(String(sip.userId), String(sip._id), "COMPLETED", `SIP for ${ sip.stockSymbol } is completed.`);
     return;
   }
 
@@ -141,7 +153,7 @@ const executeDueSip = async (sip: any) => {
     sip.nextRunDate = toISODate(getNextSipDate(scheduledDate, sip.frequency));
     await sip.save();
     await SipExecution.create({ sipId: sip._id, userId: sip.userId, stockSymbol: sip.stockSymbol, scheduledDate: sip.nextRunDate, status: "FAILED", error: "Unable to fetch stock price" });
-    await createSipNotification(String(sip.userId), String(sip._id), "FAILED", `SIP for ${sip.stockSymbol} failed: stock price unavailable.`);
+    await createSipNotification(String(sip.userId), String(sip._id), "FAILED", `SIP for ${ sip.stockSymbol } failed: stock price unavailable.`);
     return;
   }
 
@@ -150,7 +162,7 @@ const executeDueSip = async (sip: any) => {
     sip.nextRunDate = toISODate(getNextSipDate(scheduledDate, sip.frequency));
     await sip.save();
     await SipExecution.create({ sipId: sip._id, userId: sip.userId, stockSymbol: sip.stockSymbol, scheduledDate: sip.nextRunDate, price: stockPrice, amount: sip.investmentAmount, status: "FAILED", error: "Insufficient wallet balance" });
-    await createSipNotification(String(sip.userId), String(sip._id), "FAILED", `SIP for ${sip.stockSymbol} failed due to insufficient balance.`);
+    await createSipNotification(String(sip.userId), String(sip._id), "FAILED", `SIP for ${ sip.stockSymbol } failed due to insufficient balance.`);
     return;
   }
 
@@ -181,8 +193,8 @@ const executeDueSip = async (sip: any) => {
   sip.status = shouldComplete ? "COMPLETED" : "ACTIVE";
   await sip.save();
 
-  await createSipNotification(String(sip.userId), String(sip._id), "EXECUTED", `SIP executed for ${sip.stockSymbol}: $${sip.investmentAmount.toFixed(2)} invested.`);
-  if (shouldComplete) await createSipNotification(String(sip.userId), String(sip._id), "COMPLETED", `SIP for ${sip.stockSymbol} has reached its end date and is now completed.`);
+  await createSipNotification(String(sip.userId), String(sip._id), "EXECUTED", `SIP executed for ${ sip.stockSymbol }: $${ sip.investmentAmount.toFixed(2) } invested.`);
+  if (shouldComplete) await createSipNotification(String(sip.userId), String(sip._id), "COMPLETED", `SIP for ${ sip.stockSymbol } has reached its end date and is now completed.`);
 };
 
 const processDueSips = async () => {
@@ -469,14 +481,16 @@ app.post("/api/ai/chat", authenticateToken, async (req: any, res) => {
 
   if (gemini) {
     try {
-      const response = await gemini.models.generateContent({ model: "gemini-2.0-flash", contents: message });
+      const fullPrompt = `${ STOCKIFY_SYSTEM_PROMPT } \n\nUser question: ${ message } `;
+      const response = await gemini.models.generateContent({ model: "gemini-2.0-flash", contents: fullPrompt });
       const text = response.text?.trim();
       if (text) return res.json({ text });
     } catch (error) {
-      console.error("Gemini fallback error:", error);
+      console.error("Gemini error:", error);
     }
   }
-  return res.json({ text: getLimitedChatReply(message) });
+  // Smart knowledge-base fallback (replaces the old limited-question reply)
+  return res.json({ text: getSmartFallback(message) });
 });
 
 async function startServer() {
@@ -484,8 +498,8 @@ async function startServer() {
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`API server running on http://localhost:${PORT}`);
   });
-  await processDueSips();
-  setInterval(() => processDueSips(), 60 * 1000);
+await processDueSips();
+setInterval(() => processDueSips(), 60 * 1000);
 }
 
 startServer().catch((error) => {
