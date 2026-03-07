@@ -144,16 +144,104 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-10%] left-[-10%] w-[45%] h-[45%] bg-emerald-500/10 blur-[120px] rounded-full animate-pulse" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-violet-500/10 blur-[120px] rounded-full" />
-        <motion.svg className="absolute inset-0 w-full h-full opacity-25" viewBox="0 0 1200 800"
-          animate={{ opacity: [0.2, 0.35, 0.2] }} transition={{ duration: 4, repeat: Infinity }}>
-          <motion.path d="M0 580 C120 500,220 640,340 540 C460 450,560 590,680 500 C800 410,920 560,1040 470 C1100 430,1160 420,1200 390"
-            fill="none" stroke="rgba(16,185,129,0.5)" strokeWidth="2.5" strokeLinecap="round"
-            animate={{ pathLength: [0.3, 1, 0.3] }} transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }} />
+      {/* Background: Premium Multi-Layered Animation */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+        {/* Layer 1: Ambient Mesh Grid */}
+        <motion.div
+          className="absolute inset-0 opacity-[0.15]"
+          style={{
+            backgroundImage: `radial-gradient(circle at 2px 2px, rgba(16, 185, 129, 0.2) 1px, transparent 0)`,
+            backgroundSize: '40px 40px'
+          }}
+          animate={{
+            x: [0, -20, 0],
+            y: [0, -20, 0]
+          }}
+          transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+        />
+
+        {/* Layer 2: Dynamic Gradient Orbs */}
+        <motion.div
+          className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-blue-600/10 blur-[130px] rounded-full"
+          animate={{
+            x: [0, 100, 0],
+            y: [0, 50, 0],
+            scale: [1, 1.2, 1],
+          }}
+          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute bottom-[-10%] right-[-10%] w-[55%] h-[55%] bg-emerald-500/10 blur-[130px] rounded-full"
+          animate={{
+            x: [0, -80, 0],
+            y: [0, -60, 0],
+            scale: [1, 1.1, 1],
+          }}
+          transition={{ duration: 25, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="absolute top-[20%] right-[10%] w-[30%] h-[30%] bg-violet-600/5 blur-[100px] rounded-full"
+          animate={{
+            x: [0, -50, 0],
+            y: [0, 100, 0],
+          }}
+          transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
+        />
+
+        {/* Layer 3: Shifting Mesh Lines */}
+        <motion.svg className="absolute inset-0 w-full h-full opacity-20" viewBox="0 0 1200 800" preserveAspectRatio="none">
+          <motion.path
+            d="M0 400 Q300 350 600 400 T1200 400"
+            fill="none"
+            stroke="url(#grad1)"
+            strokeWidth="1.5"
+            animate={{ d: ["M0 400 Q300 350 600 400 T1200 400", "M0 400 Q300 450 600 400 T1200 400", "M0 400 Q300 350 600 400 T1200 400"] }}
+            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+          />
+          <motion.path
+            d="M0 500 Q300 550 600 500 T1200 500"
+            fill="none"
+            stroke="url(#grad2)"
+            strokeWidth="1.5"
+            animate={{ d: ["M0 500 Q300 550 600 500 T1200 500", "M0 500 Q300 450 600 500 T1200 500", "M0 500 Q300 550 600 500 T1200 500"] }}
+            transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+          />
+          <defs>
+            <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#3b82f6" stopOpacity="0" />
+              <stop offset="50%" stopColor="#3b82f6" stopOpacity="0.5" />
+              <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+            </linearGradient>
+            <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#10b981" stopOpacity="0" />
+              <stop offset="50%" stopColor="#10b981" stopOpacity="0.5" />
+              <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
+            </linearGradient>
+          </defs>
         </motion.svg>
+
+        {/* Layer 4: Floating Particles */}
+        {[...Array(20)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-1 h-1 bg-white/20 rounded-full"
+            initial={{
+              x: Math.random() * 1200,
+              y: Math.random() * 800,
+              opacity: Math.random() * 0.5
+            }}
+            animate={{
+              y: [null, Math.random() * 800 - 400],
+              x: [null, Math.random() * 1200 - 600],
+              opacity: [0.1, 0.4, 0.1]
+            }}
+            transition={{
+              duration: 15 + Math.random() * 20,
+              repeat: Infinity,
+              ease: "linear"
+            }}
+          />
+        ))}
       </div>
 
       {/* Ticker */}
