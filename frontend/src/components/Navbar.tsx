@@ -36,6 +36,7 @@ export default function Navbar() {
     { id: 'transactions', label: 'Orders' },
     { id: 'funds', label: 'Funds' },
     { id: 'guide', label: 'Academy' },
+    { id: 'support', label: 'Support' },
   ];
 
   const indexData = [

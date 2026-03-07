@@ -17,6 +17,7 @@ import Watchlist from './pages/Watchlist';
 import Onboarding from './pages/Onboarding';
 import AIChatbot from './components/AIChatbot';
 import Tutorial from './components/Tutorial';
+import Support from './pages/Support';
 import Auth from './pages/Auth';
 import { motion, AnimatePresence } from 'motion/react';
 import { X } from 'lucide-react';
@@ -299,6 +300,7 @@ export default function App() {
                 {activeTab === 'transactions' && <Transactions />}
                 {activeTab === 'profile-settings' && <ProfileSettings />}
                 {activeTab === 'preferences' && <Preferences />}
+                {activeTab === 'support' && <Support />}
               </motion.div>
             </AnimatePresence>
 
