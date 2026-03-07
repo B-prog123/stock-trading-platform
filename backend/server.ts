@@ -144,7 +144,7 @@ const executeDueSip = async (sip: any) => {
     sip.status = "COMPLETED";
     sip.nextRunDate = null;
     await sip.save();
-    await createSipNotification(String(sip.userId), String(sip._id), "COMPLETED", `SIP for ${ sip.stockSymbol } is completed.`);
+    await createSipNotification(String(sip.userId), String(sip._id), "COMPLETED", `SIP for ${sip.stockSymbol} is completed.`);
     return;
   }
 
@@ -153,7 +153,7 @@ const executeDueSip = async (sip: any) => {
     sip.nextRunDate = toISODate(getNextSipDate(scheduledDate, sip.frequency));
     await sip.save();
     await SipExecution.create({ sipId: sip._id, userId: sip.userId, stockSymbol: sip.stockSymbol, scheduledDate: sip.nextRunDate, status: "FAILED", error: "Unable to fetch stock price" });
-    await createSipNotification(String(sip.userId), String(sip._id), "FAILED", `SIP for ${ sip.stockSymbol } failed: stock price unavailable.`);
+    await createSipNotification(String(sip.userId), String(sip._id), "FAILED", `SIP for ${sip.stockSymbol} failed: stock price unavailable.`);
     return;
   }
 
@@ -162,7 +162,7 @@ const executeDueSip = async (sip: any) => {
     sip.nextRunDate = toISODate(getNextSipDate(scheduledDate, sip.frequency));
     await sip.save();
     await SipExecution.create({ sipId: sip._id, userId: sip.userId, stockSymbol: sip.stockSymbol, scheduledDate: sip.nextRunDate, price: stockPrice, amount: sip.investmentAmount, status: "FAILED", error: "Insufficient wallet balance" });
-    await createSipNotification(String(sip.userId), String(sip._id), "FAILED", `SIP for ${ sip.stockSymbol } failed due to insufficient balance.`);
+    await createSipNotification(String(sip.userId), String(sip._id), "FAILED", `SIP for ${sip.stockSymbol} failed due to insufficient balance.`);
     return;
   }
 
@@ -193,8 +193,8 @@ const executeDueSip = async (sip: any) => {
   sip.status = shouldComplete ? "COMPLETED" : "ACTIVE";
   await sip.save();
 
-  await createSipNotification(String(sip.userId), String(sip._id), "EXECUTED", `SIP executed for ${ sip.stockSymbol }: $${ sip.investmentAmount.toFixed(2) } invested.`);
-  if (shouldComplete) await createSipNotification(String(sip.userId), String(sip._id), "COMPLETED", `SIP for ${ sip.stockSymbol } has reached its end date and is now completed.`);
+  await createSipNotification(String(sip.userId), String(sip._id), "EXECUTED", `SIP executed for ${sip.stockSymbol}: $${sip.investmentAmount.toFixed(2)} invested.`);
+  if (shouldComplete) await createSipNotification(String(sip.userId), String(sip._id), "COMPLETED", `SIP for ${sip.stockSymbol} has reached its end date and is now completed.`);
 };
 
 const processDueSips = async () => {
@@ -222,8 +222,42 @@ app.post("/api/auth/login", async (req, res) => {
   const user: any = await User.findOne({ email });
   if (!user || !(await bcrypt.compare(password, user.password))) return res.status(401).json({ error: "Invalid credentials" });
   const token = jwt.sign({ id: String(user._id), email: user.email }, JWT_SECRET);
-  res.json({ token, user: { id: String(user._id), email: user.email, name: user.name, balance: user.balance } });
+  res.json({ token, user: { id: String(user._id), email: user.email, name: user.name, balance: user.balance, phone: user.phone || "" } });
 });
+
+// ── OTP Store (in-memory for dev; replace with Redis/DB in prod) ──────────────
+const phoneOtpStore = new Map<string, { otp: string; expiresAt: number }>();
+
+app.post("/api/auth/send-otp", async (req, res) => {
+  const { phone } = req.body;
+  if (!phone || !/^[6-9]\d{9}$/.test(String(phone))) {
+    return res.status(400).json({ error: "Enter a valid 10-digit Indian mobile number" });
+  }
+  // Generate 6-digit OTP
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
+  phoneOtpStore.set(phone, { otp, expiresAt });
+  console.log(`[OTP] Phone: ${phone} OTP: ${otp}`); // visible in server logs
+  // In production: send via SMS provider (e.g., MSG91, Twilio)
+  // For now we return it in dev mode so frontend can display it
+  res.json({ success: true, otp, message: "OTP sent successfully (dev mode)" });
+});
+
+app.post("/api/auth/verify-otp", async (req, res) => {
+  const { phone, otp } = req.body;
+  if (!phone || !otp) return res.status(400).json({ error: "Phone and OTP are required" });
+  const stored = phoneOtpStore.get(phone);
+  if (!stored) return res.status(400).json({ error: "No OTP sent to this number. Request a new one." });
+  if (Date.now() > stored.expiresAt) {
+    phoneOtpStore.delete(phone);
+    return res.status(400).json({ error: "OTP has expired. Please request a new one." });
+  }
+  if (stored.otp !== String(otp)) return res.status(400).json({ error: "Incorrect OTP. Please try again." });
+  phoneOtpStore.delete(phone); // One-time use
+  res.json({ success: true, message: "OTP verified successfully" });
+});
+
+
 
 app.get("/api/user/profile", authenticateToken, async (req: any, res) => {
   const user: any = await User.findById(req.user.id).select("_id email name balance");
@@ -481,7 +515,7 @@ app.post("/api/ai/chat", authenticateToken, async (req: any, res) => {
 
   if (gemini) {
     try {
-      const fullPrompt = `${ STOCKIFY_SYSTEM_PROMPT } \n\nUser question: ${ message } `;
+      const fullPrompt = `${STOCKIFY_SYSTEM_PROMPT} \n\nUser question: ${message} `;
       const response = await gemini.models.generateContent({ model: "gemini-2.0-flash", contents: fullPrompt });
       const text = response.text?.trim();
       if (text) return res.json({ text });
@@ -498,8 +532,8 @@ async function startServer() {
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`API server running on http://localhost:${PORT}`);
   });
-await processDueSips();
-setInterval(() => processDueSips(), 60 * 1000);
+  await processDueSips();
+  setInterval(() => processDueSips(), 60 * 1000);
 }
 
 startServer().catch((error) => {
