@@ -52,6 +52,13 @@ export default function Dashboard() {
 
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+      <div className="flex flex-col gap-1 mb-2">
+        <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
+          Welcome back, {user?.name?.split(' ')[0] || 'Trader'}! 👋
+        </h1>
+        <p className="text-[var(--text-secondary)] text-sm md:text-base">Here's your portfolio overview for today.</p>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card title="Balance" value={`$${(user?.balance || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`} icon={<Activity size={18} />} />
         <Card title="Portfolio Value" value={`$${totalValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}`} icon={<TrendingUp size={18} />} />
