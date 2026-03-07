@@ -4,17 +4,17 @@
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
-  
+
   --color-brand-50: #f0f9ff;
   --color-brand-100: #e0f2fe;
   --color-brand-500: #3b82f6;
   --color-brand-600: #2563eb;
-  
+
   /* Trading colors */
   --color-profit-400: #4ade80;
   --color-profit-500: #22c55e;
   --color-profit-600: #16a34a;
-  
+
   --color-loss-400: #f87171;
   --color-loss-500: #ef4444;
   --color-loss-600: #dc2626;
@@ -22,9 +22,9 @@
 
 @layer base {
   :root {
-    --bg-primary: #f1f5f9;
+    --bg-primary: #f8fafc;
     --bg-secondary: #ffffff;
-    --bg-tertiary: #f8fafc;
+    --bg-tertiary: #f1f5f9;
     --text-primary: #0f172a;
     --text-secondary: #475569;
     --text-muted: #94a3b8;
@@ -32,20 +32,22 @@
     --border-light: #f1f5f9;
     --card-bg: #ffffff;
     --glass-bg: #ffffff;
+    --accent: #2563eb;
   }
 
   :root.dark {
-    /* Classic dark terminal look */
-    --bg-primary: #000000;
-    --bg-secondary: #121212;
-    --bg-tertiary: #1e1e1e;
-    --text-primary: #e2e8f0;
-    --text-secondary: #94a3b8;
-    --text-muted: #64748b;
-    --border-color: #27272a;
-    --border-light: #1f2937;
-    --card-bg: #121212;
-    --glass-bg: #121212;
+    /* Premium dark terminal look with subtle blue/emerald tint */
+    --bg-primary: #0a0e14;
+    --bg-secondary: #11151c;
+    --bg-tertiary: #1a1f29;
+    --text-primary: #f1f5f9;
+    --text-secondary: #8b98a5;
+    --text-muted: #475569;
+    --border-color: #1e293b;
+    --border-light: #0f172a;
+    --card-bg: #11151c;
+    --glass-bg: #11151c;
+    --accent: #10b981;
   }
 }
 
@@ -54,21 +56,24 @@
     width: 6px;
     height: 6px;
   }
+
   .scrollbar-hide::-webkit-scrollbar-track {
     background: transparent;
   }
+
   .scrollbar-hide::-webkit-scrollbar-thumb {
     @apply bg-slate-300 dark:bg-slate-700 rounded-full;
   }
-  
+
   .glass-card {
-    @apply bg-[var(--card-bg)] border border-[var(--border-color)];
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
   }
-  
+
   .neo-button {
     @apply relative overflow-hidden transition-colors active:scale-95;
   }
-  
+
   .text-gradient {
     @apply text-[var(--text-primary)];
   }

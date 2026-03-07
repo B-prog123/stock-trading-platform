@@ -55,12 +55,12 @@ export default function MarketNews() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.1 }}
-            className="p-4 bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl hover:border-emerald-500/30 transition-all group cursor-pointer"
+            className="p-4 bg-[var(--bg-secondary)] border-b border-[var(--border-color)] last:border-0 hover:bg-[var(--bg-primary)] transition-colors group cursor-pointer"
           >
             <div className="flex justify-between items-start gap-4">
               <div className="space-y-1 flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-[var(--hover-bg)] rounded-md text-[var(--text-secondary)]">
+                  <span className="text-[10px] font-bold uppercase tracking-widest px-1.5 py-0.5 border border-[var(--border-color)] rounded text-[var(--text-secondary)]">
                     {item.category}
                   </span>
                   {item.sentiment === 'positive' && <TrendingUp size={14} className="text-emerald-500" />}
@@ -74,8 +74,8 @@ export default function MarketNews() {
                   {item.summary}
                 </p>
               </div>
-              <div className="p-2 bg-[var(--hover-bg)] rounded-xl opacity-0 group-hover:opacity-100 transition-opacity">
-                <ExternalLink size={16} className="text-[var(--text-secondary)]" />
+              <div className="p-2 text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] transition-colors">
+                <ExternalLink size={16} />
               </div>
             </div>
           </motion.div>
@@ -89,53 +89,47 @@ export default function MarketNews() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-[var(--card-bg)] border border-[var(--border-color)] w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl relative"
+              className="bg-[var(--bg-secondary)] border border-[var(--border-color)] w-full max-w-2xl rounded-sm shadow-2xl relative"
             >
-              <button 
+              <button
                 onClick={() => setSelectedNews(null)}
-                className="absolute top-4 right-4 p-2 bg-[var(--hover-bg)] rounded-full text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                className="absolute top-4 right-4 p-2 text-[var(--text-secondary)] hover:text-red-500 transition-colors"
               >
                 <X size={20} />
               </button>
-              
-              <div className="p-8">
+
+              <div className="p-6 md:p-8">
                 <div className="flex items-center gap-2 mb-4">
-                  <span className="text-xs font-bold uppercase tracking-wider px-3 py-1 bg-[var(--hover-bg)] rounded-lg text-[var(--text-secondary)]">
+                  <span className="text-[10px] font-bold uppercase tracking-widest border border-[var(--border-color)] px-2 py-1 flex items-center gap-1 text-[var(--text-secondary)]">
                     {selectedNews.category}
                   </span>
-                  {selectedNews.sentiment === 'positive' && <span className="flex items-center gap-1 text-xs font-bold text-emerald-500 bg-emerald-500/10 px-3 py-1 rounded-lg"><TrendingUp size={14} /> Bullish</span>}
-                  {selectedNews.sentiment === 'negative' && <span className="flex items-center gap-1 text-xs font-bold text-rose-500 bg-rose-500/10 px-3 py-1 rounded-lg"><TrendingDown size={14} /> Bearish</span>}
-                  {selectedNews.sentiment === 'neutral' && <span className="flex items-center gap-1 text-xs font-bold text-amber-500 bg-amber-500/10 px-3 py-1 rounded-lg"><Minus size={14} /> Neutral</span>}
+                  {selectedNews.sentiment === 'positive' && <span className="flex items-center gap-1 text-[10px] uppercase tracking-widest font-bold text-emerald-500 border border-emerald-500/30 px-2 py-1"><TrendingUp size={12} /> Bullish</span>}
+                  {selectedNews.sentiment === 'negative' && <span className="flex items-center gap-1 text-[10px] uppercase tracking-widest font-bold text-red-500 border border-red-500/30 px-2 py-1"><TrendingDown size={12} /> Bearish</span>}
+                  {selectedNews.sentiment === 'neutral' && <span className="flex items-center gap-1 text-[10px] uppercase tracking-widest font-bold text-yellow-500 border border-yellow-500/30 px-2 py-1"><Minus size={12} /> Neutral</span>}
                 </div>
-                
-                <h2 className="text-2xl font-bold mb-4 leading-tight">{selectedNews.title}</h2>
-                
+
+                <h2 className="text-xl md:text-2xl font-bold mb-4 leading-tight text-[var(--text-primary)]">{selectedNews.title}</h2>
+
                 <div className="prose prose-invert max-w-none">
-                  <p className="text-[var(--text-secondary)] leading-relaxed text-lg">
+                  <p className="text-[var(--text-secondary)] leading-relaxed text-sm md:text-base">
                     {selectedNews.summary}
                   </p>
                 </div>
-                
-                <div className="mt-8 pt-6 border-t border-[var(--border-color)] flex justify-between items-center">
-                  <span className="text-sm text-[var(--text-secondary)] flex items-center gap-2">
-                    <Clock size={16} />
+
+                <div className="mt-8 pt-4 border-t border-[var(--border-color)] flex justify-between items-center">
+                  <span className="text-xs text-[var(--text-secondary)] flex items-center gap-1">
+                    <Clock size={14} />
                     Published Today
                   </span>
                   <div className="flex items-center gap-3">
-                    <a 
+                    <a
                       href={`https://www.google.com/search?q=${encodeURIComponent(selectedNews.title)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2 px-6 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 rounded-xl font-medium transition-colors"
+                      className="flex items-center gap-2 px-4 py-2 border border-emerald-500/50 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 text-xs font-bold uppercase tracking-widest transition-colors"
                     >
-                      Read More <ExternalLink size={16} />
+                      Read More <ExternalLink size={14} />
                     </a>
-                    <button 
-                      onClick={() => setSelectedNews(null)}
-                      className="px-6 py-2 bg-[var(--hover-bg)] hover:bg-[var(--border-color)] rounded-xl font-medium transition-colors"
-                    >
-                      Close
-                    </button>
                   </div>
                 </div>
               </div>

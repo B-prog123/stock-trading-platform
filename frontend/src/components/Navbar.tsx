@@ -18,6 +18,8 @@ export default function Navbar() {
   const navLinks = [
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'portfolio', label: 'Portfolio' },
+    { id: 'market', label: 'Market Watch' },
+    { id: 'market-news', label: 'News' },
     { id: 'transactions', label: 'Orders' },
     { id: 'funds', label: 'Funds' },
   ];
@@ -39,8 +41,8 @@ export default function Navbar() {
               key={link.id}
               onClick={() => setActiveTab(link.id)}
               className={`px-4 h-full text-sm font-medium border-b-2 transition-colors ${activeTab === link.id
-                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                  : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
             >
               {link.label}

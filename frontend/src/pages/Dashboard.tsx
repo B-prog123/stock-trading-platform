@@ -50,6 +50,13 @@ export default function Dashboard() {
 
   const totalValue = portfolio.reduce((acc, item) => acc + item.quantity * item.avgPrice, 0);
 
+  // Re-creating the metrics object that was errantly removed/expected
+  const metrics = {
+    totalValue: (user?.balance || 0) + totalValue,
+    todayReturn: 240.50, // Static mock for the dashboard visual
+    todayReturnPercentage: 0.0125 // Static mock 1.25%
+  };
+
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
       <div className="flex flex-col gap-1 mb-6 border-b border-[var(--border-color)] pb-4">
@@ -68,7 +75,7 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 rounded border border-[var(--border-color)] bg-[var(--bg-secondary)] p-4">
-          <h3 className="text-sm font-semibold mb-4 text-[var(--text-secondary)]">Portfolio Trend</h3>
+          <h3 className="text-sm font-bold flex items-center gap-2 mb-4 text-[var(--text-primary)]">Portfolio Trend</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData}>
@@ -83,7 +90,25 @@ export default function Dashboard() {
         </div>
 
         <div className="rounded border border-[var(--border-color)] bg-[var(--bg-secondary)] p-4">
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-2 text-[var(--text-primary)]">
+            <div>
+              <p className="text-[10px] text-[var(--text-secondary)] uppercase tracking-widest font-bold mb-1">Total Account Value</p>
+              <h2 className="text-3xl md:text-5xl font-mono font-bold tracking-tighter">
+                ${metrics.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              </h2>
+            </div>
+            <div className={`flex items-center gap-2 font-mono font-bold text-lg md:text-xl ${metrics.todayReturn >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+              <div className={`p-1 border ${metrics.todayReturn >= 0 ? 'border-emerald-500/30 bg-emerald-500/10' : 'border-rose-500/30 bg-rose-500/10'}`}>
+                {metrics.todayReturn >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+              </div>
+              <span>
+                {metrics.todayReturn >= 0 ? '+' : '-'}${Math.abs(metrics.todayReturn).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                <span className="text-base opacity-70"> ({metrics.todayReturnPercentage >= 0 ? '+' : ''}{(metrics.todayReturnPercentage * 100).toFixed(2)}%)</span>
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 mt-6 mb-4">
             <Brain size={16} className="text-blue-500" />
             <h3 className="text-sm font-semibold text-[var(--text-secondary)]">AI Recommendations</h3>
           </div>

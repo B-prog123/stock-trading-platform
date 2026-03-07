@@ -238,13 +238,13 @@ export default function Portfolio() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead className="text-[var(--text-secondary)] text-[10px] uppercase tracking-[0.2em] font-bold">
-                <tr>
-                  <th className="px-8 py-4">Asset</th>
-                  <th className="px-8 py-4">Quantity</th>
-                  <th className="px-8 py-4">Avg. Price</th>
-                  <th className="px-8 py-4">Current Price</th>
-                  <th className="px-8 py-4">Current Value</th>
-                  <th className="px-8 py-4">P&L</th>
+                <tr className="text-left text-[10px] uppercase tracking-widest text-[var(--text-secondary)]">
+                  <th className="p-3">Asset</th>
+                  <th className="p-3 text-right">Shares</th>
+                  <th className="p-3 text-right">Avg Cost</th>
+                  <th className="p-3 text-right">Current Price</th>
+                  <th className="p-3 text-right">Total Value</th>
+                  <th className="p-3 text-right">Return</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border-color)]">
@@ -269,33 +269,31 @@ export default function Portfolio() {
                     const currentValue = perf?.currentValue ?? item.quantity * item.avgPrice;
                     const pnl = perf?.profitLoss ?? 0;
                     const pnlPct = perf?.profitLossPercent ?? 0;
+                    const totalCost = item.quantity * item.avgPrice;
+                    const itemReturn = totalCost > 0 ? ((currentValue - totalCost) / totalCost) * 100 : 0;
 
                     return (
                       <tr key={item.symbol} onClick={() => handleTradeClick(item.symbol)} className="hover:bg-[var(--bg-secondary)] transition-colors group cursor-pointer">
-                        <td className="px-8 py-6">
-                          <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 bg-[var(--bg-secondary)] rounded-xl flex items-center justify-center font-bold text-sm border border-[var(--border-color)] group-hover:border-emerald-500/30 transition-colors text-[var(--text-primary)]">
+                        <td className="p-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-sm bg-[var(--bg-primary)] flex items-center justify-center font-bold text-xs text-[var(--text-primary)] border border-[var(--border-color)]">
                               {item.symbol[0]}
                             </div>
                             <div>
-                              <div className="font-bold text-lg text-[var(--text-primary)]">{item.symbol}</div>
-                              <div className="text-[10px] text-[var(--text-secondary)] uppercase tracking-widest">{getSector(item.symbol)}</div>
+                              <div className="font-bold text-[var(--text-primary)] text-sm">{item.symbol}</div>
                             </div>
                           </div>
                         </td>
-                        <td className="px-8 py-6 font-mono text-[var(--text-secondary)]">{item.quantity.toFixed(4)}</td>
-                        <td className="px-8 py-6 font-mono text-[var(--text-secondary)]">${item.avgPrice.toFixed(2)}</td>
-                        <td className="px-8 py-6 font-mono text-[var(--text-secondary)]">${currentPrice.toFixed(2)}</td>
-                        <td className="px-8 py-6 font-mono font-bold text-[var(--text-primary)]">${currentValue.toFixed(2)}</td>
-                        <td className="px-8 py-6">
-                          <div className="flex flex-col items-end">
-                            <span className={`font-mono font-bold flex items-center gap-1 ${pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                              {pnl >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                              {pnl >= 0 ? '+' : '-'}$${Math.abs(pnl).toFixed(2)}
-                            </span>
-                            <span className={`text-[10px] ${pnl >= 0 ? 'text-emerald-400/70' : 'text-red-400/70'}`}>
-                              {pnlPct >= 0 ? '+' : ''}{pnlPct.toFixed(2)}%
-                            </span>
+                        <td className="p-3 text-right font-mono text-sm text-[var(--text-secondary)]">{item.quantity.toFixed(2)}</td>
+                        <td className="p-3 text-right font-mono text-sm text-[var(--text-secondary)]">${item.avgPrice.toFixed(2)}</td>
+                        <td className="p-3 text-right font-mono text-sm text-[var(--text-primary)]">${currentPrice.toFixed(2)}</td>
+                        <td className="p-3 text-right font-mono font-bold text-sm text-[var(--text-primary)]">${currentValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td className="p-3 text-right">
+                          <div className={`font-mono font-bold text-sm ${itemReturn >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                            {itemReturn >= 0 ? '+' : ''}{itemReturn.toFixed(2)}%
+                          </div>
+                          <div className={`text-[10px] font-mono ${itemReturn >= 0 ? 'text-emerald-500/70' : 'text-rose-500/70'}`}>
+                            {itemReturn >= 0 ? '+' : ''}${(currentValue - totalCost).toFixed(2)}
                           </div>
                         </td>
                       </tr>
@@ -317,7 +315,7 @@ export default function Portfolio() {
               {portfolio.length > 0 && isMounted ? (
                 <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0} debounce={100}>
                   <PieChart>
-                    <Pie data={chartData} cx="50%" cy="50%" innerRadius={70} outerRadius={95} paddingAngle={8} dataKey="value" stroke="none">
+                    <Pie data={sectorData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={2} dataKey="value" stroke="none">
                       {chartData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
