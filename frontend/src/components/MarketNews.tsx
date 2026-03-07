@@ -103,9 +103,9 @@ export default function MarketNews() {
                   <span className="text-[10px] font-bold uppercase tracking-widest border border-[var(--border-color)] px-2 py-1 flex items-center gap-1 text-[var(--text-secondary)]">
                     {selectedNews.category}
                   </span>
-                  {selectedNews.sentiment === 'positive' && <span className="flex items-center gap-1 text-[10px] uppercase tracking-widest font-bold text-emerald-500 border border-emerald-500/30 px-2 py-1"><TrendingUp size={12} /> Bullish</span>}
-                  {selectedNews.sentiment === 'negative' && <span className="flex items-center gap-1 text-[10px] uppercase tracking-widest font-bold text-red-500 border border-red-500/30 px-2 py-1"><TrendingDown size={12} /> Bearish</span>}
-                  {selectedNews.sentiment === 'neutral' && <span className="flex items-center gap-1 text-[10px] uppercase tracking-widest font-bold text-yellow-500 border border-yellow-500/30 px-2 py-1"><Minus size={12} /> Neutral</span>}
+                  {selectedNews.sentiment === 'positive' && <span className="flex items-center gap-1 text-[10px] uppercase tracking-widest font-bold text-emerald-500 border border-emerald-500/30 px-2 py-1"><TrendingUp size={12} /> BUY</span>}
+                  {selectedNews.sentiment === 'negative' && <span className="flex items-center gap-1 text-[10px] uppercase tracking-widest font-bold text-rose-500 border border-rose-500/30 px-2 py-1"><TrendingDown size={12} /> SELL</span>}
+                  {selectedNews.sentiment === 'neutral' && <span className="flex items-center gap-1 text-[10px] uppercase tracking-widest font-bold text-yellow-500 border border-yellow-500/30 px-2 py-1"><Minus size={12} /> HOLD</span>}
                 </div>
 
                 <h2 className="text-xl md:text-2xl font-bold mb-4 leading-tight text-[var(--text-primary)]">{selectedNews.title}</h2>

@@ -188,8 +188,8 @@ export default function Dashboard() {
                   >
                     <div className="flex items-center justify-between">
                       <p className="font-semibold text-sm">{rec.symbol}</p>
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded ${rec.trend === 'bullish' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'}`}>
-                        {rec.trend.toUpperCase()}
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded border ${rec.trend === 'bullish' ? 'text-emerald-500 border-emerald-500/30 bg-emerald-500/10' : 'text-rose-500 border-rose-500/30 bg-rose-500/10'}`}>
+                        {rec.trend === 'bullish' ? 'BUY' : 'SELL'}
                       </span>
                     </div>
                     <p className="text-xs text-[var(--text-secondary)] mt-1.5 leading-relaxed">{rec.reasoning}</p>
