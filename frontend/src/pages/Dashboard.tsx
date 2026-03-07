@@ -97,13 +97,11 @@ export default function Dashboard() {
                 ${metrics.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
               </h2>
             </div>
-            <div className={`flex items-center gap-2 font-mono font-bold text-lg md:text-xl ${metrics.todayReturn >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-              <div className={`p-1 border ${metrics.todayReturn >= 0 ? 'border-emerald-500/30 bg-emerald-500/10' : 'border-rose-500/30 bg-rose-500/10'}`}>
-                {metrics.todayReturn >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-              </div>
+            <div className={`flex items-center gap-2 font-mono font-bold text-sm md:text-base px-3 py-1.5 border rounded-lg ${metrics.todayReturn >= 0 ? 'text-emerald-500 border-emerald-500/30 bg-emerald-500/10' : 'text-rose-500 border-rose-500/30 bg-rose-500/10'}`}>
+              {metrics.todayReturn >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
               <span>
                 {metrics.todayReturn >= 0 ? '+' : '-'}${Math.abs(metrics.todayReturn).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                <span className="text-base opacity-70"> ({metrics.todayReturnPercentage >= 0 ? '+' : ''}{(metrics.todayReturnPercentage * 100).toFixed(2)}%)</span>
+                <span className="opacity-80 ml-1">({metrics.todayReturnPercentage >= 0 ? '+' : ''}{(metrics.todayReturnPercentage * 100).toFixed(2)}%)</span>
               </span>
             </div>
           </div>
