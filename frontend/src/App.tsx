@@ -285,7 +285,7 @@ export default function App() {
                 {activeTab === 'market-news' && <MarketNewsPage />}
                 {activeTab === 'funds' && <Funds />}
                 {activeTab === 'sip' && <SIP />}
-                {activeTab === 'watchlist' && <div className="h-[calc(100vh-140px)] w-full max-w-xl mx-auto rounded-xl overflow-hidden border border-[var(--border-color)] shadow-sm"><Watchlist /></div>}
+                {activeTab === 'watchlist' && <Watchlist />}
                 {activeTab === 'portfolio' && <Portfolio />}
                 {activeTab === 'transactions' && <Transactions />}
                 {activeTab === 'profile-settings' && <ProfileSettings />}
