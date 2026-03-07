@@ -1,89 +1,82 @@
 import React, { useState } from 'react';
 import {
-  Menu,
-  Search,
   Bell,
-  User as UserIcon,
-  ChevronDown,
-  Settings,
-  LogOut,
   Sun,
   Moon,
-  Plus,
   Trash2,
 } from 'lucide-react';
 import { useAuth } from '../App';
-import { motion, AnimatePresence } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 
-interface NavbarProps {
-  onOpenSidebar: () => void;
-}
-
-export default function Navbar({ onOpenSidebar }: NavbarProps) {
-  const { user, logout, theme, toggleTheme, notifications, clearNotifications, setActiveTab } = useAuth();
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
+export default function Navbar() {
+  const { user, logout, theme, toggleTheme, notifications, clearNotifications, activeTab, setActiveTab } = useAuth();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-
-  const openTabFromProfile = (tab: string) => {
-    setActiveTab(tab);
-    setIsProfileOpen(false);
-  };
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const unreadCount = (notifications || []).filter((n) => !n.read).length;
 
-  return (
-    <nav className="h-20 border-b border-[var(--border-color)] flex items-center justify-between px-4 md:px-8 bg-[var(--bg-primary)]/70 backdrop-blur-xl shadow-[0_10px_30px_rgba(16,185,129,0.06)] sticky top-0 z-40">
-      <div className="flex items-center flex-1 max-w-xl gap-3">
-        <button
-          onClick={onOpenSidebar}
-          className="p-2.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-emerald-400 transition-all shadow-sm"
-          aria-label="Open sidebar"
-        >
-          <Menu size={18} />
-        </button>
+  const navLinks = [
+    { id: 'dashboard', label: 'Dashboard' },
+    { id: 'portfolio', label: 'Portfolio' },
+    { id: 'transactions', label: 'Orders' },
+    { id: 'funds', label: 'Funds' },
+  ];
 
-        <div className="relative group flex-1">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] group-focus-within:text-emerald-400 transition-colors" size={18} />
-          <input
-            type="text"
-            placeholder="Search stocks, news, or help..."
-            className="w-full bg-[var(--bg-secondary)]/90 border border-[var(--border-color)] rounded-2xl py-3 pl-12 pr-4 focus:outline-none focus:border-emerald-500/50 focus:shadow-[0_0_0_4px_rgba(16,185,129,0.08)] transition-all text-sm text-[var(--text-primary)]"
-          />
+  const indexData = [
+    { name: 'NIFTY 50', value: '22,326.90', change: 38.45, pctChange: 0.17 },
+    { name: 'SENSEX', value: '73,665.27', change: -36.42, pctChange: -0.05 },
+  ];
+
+  return (
+    <nav className="h-16 border-b border-[var(--border-color)] flex items-center justify-between px-4 lg:px-6 bg-[var(--bg-secondary)] shrink-0 z-40 relative">
+      <div className="flex items-center gap-8 h-full">
+        <div className="text-xl font-bold tracking-tight text-blue-600 dark:text-blue-500 cursor-pointer" onClick={() => setActiveTab('dashboard')}>
+          STOCKIFY
+        </div>
+        <div className="hidden md:flex items-center gap-2 h-full">
+          {navLinks.map(link => (
+            <button
+              key={link.id}
+              onClick={() => setActiveTab(link.id)}
+              className={`px-4 h-full text-sm font-medium border-b-2 transition-colors ${activeTab === link.id
+                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                  : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                }`}
+            >
+              {link.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="flex items-center gap-2 md:gap-4">
+      <div className="flex items-center gap-4 h-full">
+        <div className="hidden lg:flex items-center gap-6 text-xs font-semibold mr-4">
+          {indexData.map(idx => (
+            <div key={idx.name} className="flex gap-2 items-center">
+              <span className="text-[var(--text-secondary)]">{idx.name}</span>
+              <span className={idx.change >= 0 ? 'text-green-500' : 'text-red-500'}>{idx.value}</span>
+              <span className={`text-[10px] ${idx.change >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                {idx.change >= 0 ? '+' : ''}{idx.pctChange}%
+              </span>
+            </div>
+          ))}
+        </div>
+
         <button
           onClick={toggleTheme}
-          className="p-2.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-emerald-400 transition-all shadow-sm"
+          className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
           title="Toggle Theme"
         >
           {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
         </button>
 
-        <button
-          onClick={() => setActiveTab('funds')}
-          className="hidden sm:flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-bold text-sm hover:opacity-95 transition-all shadow-lg shadow-emerald-500/30"
-        >
-          <Plus size={16} />
-          Add Funds
-        </button>
-
-        <button
-          onClick={() => setActiveTab('funds')}
-          className="sm:hidden p-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white"
-          aria-label="Add funds"
-        >
-          <Plus size={16} />
-        </button>
-
-        <div className="relative">
+        <div className="relative h-full flex items-center">
           <button
             onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-            className="relative p-2.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-emerald-400 transition-all shadow-sm"
+            className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all relative"
           >
             <Bell size={18} />
-            {unreadCount > 0 && <span className="absolute top-2 right-2 w-2 h-2 bg-emerald-500 rounded-full border-2 border-[var(--bg-primary)]" />}
+            {unreadCount > 0 && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-[var(--bg-secondary)]" />}
           </button>
 
           <AnimatePresence>
@@ -94,28 +87,28 @@ export default function Navbar({ onOpenSidebar }: NavbarProps) {
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute right-0 mt-3 w-80 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-3xl shadow-2xl overflow-hidden z-50"
+                  className="absolute right-0 top-14 w-80 bg-[var(--bg-secondary)] border border-[var(--border-color)] shadow-xl z-50 rounded"
                 >
-                  <div className="p-4 border-b border-[var(--border-color)] flex items-center justify-between">
-                    <h4 className="font-bold text-sm">Notifications</h4>
+                  <div className="p-3 border-b border-[var(--border-color)] flex items-center justify-between">
+                    <h4 className="font-semibold text-sm">Notifications</h4>
                     <button
                       onClick={clearNotifications}
-                      className="text-[10px] uppercase tracking-widest text-[var(--text-secondary)] hover:text-red-400 transition-colors flex items-center gap-1"
+                      className="text-[10px] uppercase text-[var(--text-secondary)] hover:text-red-500 flex flex-center gap-1"
                     >
                       <Trash2 size={10} /> Clear All
                     </button>
                   </div>
-                  <div className="max-h-96 overflow-y-auto p-2 space-y-1">
+                  <div className="max-h-80 overflow-y-auto p-1">
                     {(notifications || []).length === 0 ? (
-                      <div className="py-10 text-center text-[var(--text-secondary)] text-xs italic">No new notifications</div>
+                      <div className="py-8 text-center text-[var(--text-secondary)] text-xs">No notifications</div>
                     ) : (
                       (notifications || []).map((n) => (
-                        <div key={n.id} className="p-3 rounded-2xl hover:bg-[var(--bg-primary)] transition-colors border border-transparent hover:border-[var(--border-color)]">
-                          <div className="flex justify-between items-start mb-1">
-                            <h5 className="font-bold text-xs text-[var(--text-primary)]">{n.title}</h5>
-                            <span className="text-[9px] text-[var(--text-secondary)]">{new Date(n.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        <div key={n.id} className="p-3 border-b border-[var(--border-color)] last:border-0 hover:bg-[var(--bg-primary)] text-left">
+                          <div className="flex justify-between items-start">
+                            <h5 className="font-semibold text-xs text-[var(--text-primary)]">{n.title}</h5>
+                            <span className="text-[10px] text-[var(--text-secondary)]">{new Date(n.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                           </div>
-                          <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed">{n.message}</p>
+                          <p className="text-xs text-[var(--text-secondary)] mt-1">{n.message}</p>
                         </div>
                       ))
                     )}
@@ -126,21 +119,17 @@ export default function Navbar({ onOpenSidebar }: NavbarProps) {
           </AnimatePresence>
         </div>
 
-        <div className="h-8 w-px bg-[var(--border-color)] mx-1 hidden sm:block" />
-
-        <div className="relative hidden sm:block">
+        <div className="relative h-full flex items-center ml-2">
           <button
             onClick={() => setIsProfileOpen(!isProfileOpen)}
-            className="flex items-center gap-3 p-1.5 rounded-2xl hover:bg-[var(--bg-secondary)] transition-all group"
+            className="flex items-center gap-2"
           >
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-400 flex items-center justify-center text-white font-bold shadow-lg shadow-emerald-500/10">
-              {user?.name[0]}
+            <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold text-xs border border-blue-200 dark:border-blue-800">
+              {user?.name?.[0]?.toUpperCase() || 'U'}
             </div>
-            <div className="text-left hidden sm:block">
-              <p className="text-sm font-bold leading-none mb-1 text-[var(--text-primary)]">{user?.name}</p>
-              <p className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wider">Pro Member</p>
-            </div>
-            <ChevronDown size={16} className={`text-[var(--text-secondary)] transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} />
+            <span className="text-sm font-medium hidden sm:block text-[var(--text-secondary)]">
+              {user?.name?.split(' ')[0] || 'User'}
+            </span>
           </button>
 
           <AnimatePresence>
@@ -151,34 +140,29 @@ export default function Navbar({ onOpenSidebar }: NavbarProps) {
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute right-0 mt-3 w-56 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-3xl shadow-2xl p-2 z-50"
+                  className="absolute right-0 top-14 w-48 bg-[var(--bg-secondary)] border border-[var(--border-color)] shadow-xl z-50 rounded py-1"
                 >
-                  <div className="px-4 py-3 border-b border-[var(--border-color)] mb-2">
-                    <p className="text-xs text-[var(--text-secondary)] uppercase tracking-widest mb-1">Account</p>
-                    <p className="text-sm font-medium truncate text-[var(--text-primary)]">{user?.email}</p>
+                  <div className="px-4 py-2 border-b border-[var(--border-color)] mb-1">
+                    <p className="text-xs text-[var(--text-secondary)]">{user?.email}</p>
                   </div>
-
-                  <button onClick={() => openTabFromProfile('profile-settings')} className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] hover:text-[var(--text-primary)] transition-all text-sm">
-                    <UserIcon size={18} />
-                    Profile Settings
+                  <button onClick={() => { setActiveTab('profile-settings'); setIsProfileOpen(false); }} className="w-fulltext-left px-4 py-2 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-primary)] transition-colors text-left flex">
+                    My Profile
                   </button>
-                  <button onClick={() => openTabFromProfile('preferences')} className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] hover:text-[var(--text-primary)] transition-all text-sm">
-                    <Settings size={18} />
+                  <button onClick={() => { setActiveTab('preferences'); setIsProfileOpen(false); }} className="w-full px-4 py-2 text-sm text-[var(--text-primary)] hover:bg-[var(--bg-primary)] transition-colors text-left flex">
                     Preferences
                   </button>
-
-                  <div className="h-px bg-[var(--border-color)] my-2" />
-
-                  <button onClick={logout} className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-red-400 hover:bg-red-500/10 transition-all text-sm">
-                    <LogOut size={18} />
-                    Sign Out
+                  <div className="margin-y-1 border-t border-[var(--border-color)]" />
+                  <button onClick={logout} className="w-full flex text-left px-4 py-2 text-sm text-red-500 hover:bg-[var(--bg-primary)] transition-colors">
+                    Logout
                   </button>
                 </motion.div>
               </>
             )}
           </AnimatePresence>
         </div>
+
       </div>
     </nav>
   );
 }
+

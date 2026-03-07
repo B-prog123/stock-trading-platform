@@ -6,7 +6,6 @@ import MobileNav from './components/MobileNav';
 import Dashboard from './pages/Dashboard';
 import Market from './pages/Market';
 import Portfolio from './pages/Portfolio';
-import Watchlist from './pages/Watchlist';
 import Transactions from './pages/Transactions';
 import ProfileSettings from './pages/ProfileSettings';
 import Preferences from './pages/Preferences';
@@ -14,6 +13,7 @@ import MarketNewsPage from './pages/MarketNewsPage';
 import HowToUse from './pages/HowToUse';
 import Funds from './pages/Funds';
 import SIP from './pages/SIP';
+import Watchlist from './pages/Watchlist';
 import Onboarding from './pages/Onboarding';
 import AIChatbot from './components/AIChatbot';
 import Auth from './pages/Auth';
@@ -66,7 +66,6 @@ export default function App() {
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showAppBrief, setShowAppBrief] = useState(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
     const storedToken = localStorage.getItem('token');
@@ -220,7 +219,7 @@ export default function App() {
 
   return (
     <AuthContext.Provider value={providerValue}>
-      <div className="relative flex h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] font-sans overflow-hidden">
+      <div className="flex flex-col h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] font-sans overflow-hidden w-full relative">
         <div className="fixed top-24 right-4 md:right-8 z-[120] pointer-events-none">
           <div className="space-y-3">
             <AnimatePresence>
@@ -231,15 +230,14 @@ export default function App() {
                   animate={{ opacity: 1, x: 0, y: 0 }}
                   exit={{ opacity: 0, x: 20, y: -6 }}
                   transition={{ duration: 0.2 }}
-                  className={`min-w-[260px] max-w-[340px] rounded-2xl border px-4 py-3 shadow-2xl backdrop-blur-md pointer-events-auto ${
-                    n.type === 'success'
-                      ? 'border-emerald-500/40 bg-emerald-500/15'
-                      : n.type === 'error'
-                        ? 'border-red-500/40 bg-red-500/15'
-                        : n.type === 'warning'
-                          ? 'border-amber-500/40 bg-amber-500/15'
-                          : 'border-cyan-500/40 bg-cyan-500/15'
-                  }`}
+                  className={`min-w-[260px] max-w-[340px] rounded border px-4 py-3 shadow-xl backdrop-blur-md pointer-events-auto ${n.type === 'success'
+                    ? 'border-green-500/40 bg-green-500/10'
+                    : n.type === 'error'
+                      ? 'border-red-500/40 bg-red-500/10'
+                      : n.type === 'warning'
+                        ? 'border-amber-500/40 bg-amber-500/10'
+                        : 'border-blue-500/40 bg-blue-500/10'
+                    }`}
                 >
                   <p className="text-xs font-bold text-[var(--text-primary)]">{n.title}</p>
                   <p className="mt-1 text-[11px] leading-relaxed text-[var(--text-secondary)]">{n.message}</p>
@@ -248,38 +246,15 @@ export default function App() {
             </AnimatePresence>
           </div>
         </div>
-        <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
-          <div className="absolute -top-24 -left-24 h-80 w-80 rounded-full bg-emerald-500/10 blur-[110px] animate-float-slow" />
-          <div className="absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-cyan-500/10 blur-[110px] animate-float-reverse" />
-          <div className="absolute top-1/3 right-1/4 h-64 w-64 rounded-full bg-blue-500/10 blur-[100px] animate-pulse-soft" />
-          <div className="absolute inset-0 bg-ambient-grid opacity-25" />
-        </div>
 
-        <AnimatePresence>
-          {isSidebarOpen && (
-            <div className="fixed inset-0 z-[90]">
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-                onClick={() => setIsSidebarOpen(false)}
-              />
-              <div className="absolute left-0 top-0 h-full">
-                <Sidebar
-                  activeTab={activeTab}
-                  setActiveTab={setActiveTab}
-                  onClose={() => setIsSidebarOpen(false)}
-                />
-              </div>
-            </div>
-          )}
-        </AnimatePresence>
+        <Navbar />
 
-        <div className="flex-1 flex flex-col min-w-0 relative">
-          <Navbar onOpenSidebar={() => setIsSidebarOpen(true)} />
+        <div className="flex flex-1 overflow-hidden min-h-0 w-full z-10">
+          <div className="w-[320px] lg:w-[380px] hidden md:flex flex-col shrink-0">
+            <Watchlist />
+          </div>
 
-          <main className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 lg:pb-8 relative scrollbar-hide">
+          <main className="flex-1 overflow-y-auto bg-[var(--bg-primary)] p-4 md:p-8 pb-24 lg:pb-8 relative scrollbar-hide">
             {showAppBrief && (
               <div className="mb-6 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 md:p-5">
                 <div className="flex items-start justify-between gap-4">
@@ -315,7 +290,6 @@ export default function App() {
                 {activeTab === 'funds' && <Funds />}
                 {activeTab === 'sip' && <SIP />}
                 {activeTab === 'portfolio' && <Portfolio />}
-                {activeTab === 'watchlist' && <Watchlist />}
                 {activeTab === 'transactions' && <Transactions />}
                 {activeTab === 'profile-settings' && <ProfileSettings />}
                 {activeTab === 'preferences' && <Preferences />}
