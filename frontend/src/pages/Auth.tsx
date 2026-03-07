@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useAuth } from '../App';
 import { motion } from 'motion/react';
 import { Mail, Lock, User, ArrowRight, Sparkles, TrendingUp } from 'lucide-react';
@@ -32,7 +32,9 @@ export default function Auth() {
         body: JSON.stringify(body)
       });
 
-      const data = await res.json();
+      const contentType = res.headers.get('content-type') || '';
+      const data = contentType.includes('application/json') ? await res.json() : null;
+
       if (res.ok) {
         if (isLogin) {
           login(data.token, data.user);
@@ -41,10 +43,10 @@ export default function Auth() {
           setInfo('Registration successful! Stockify AI gives real-time market tracking, portfolio insights, and AI-powered trade guidance. Please login to continue.');
         }
       } else {
-        setError(data.error || 'Authentication failed');
+        setError(data?.error || `Authentication failed (HTTP ${res.status})`);
       }
     } catch (err) {
-      setError('Network error');
+      setError('Network error: unable to reach API. Check VITE_API_BASE_URL and backend CORS settings.');
     } finally {
       setLoading(false);
     }
@@ -266,5 +268,6 @@ export default function Auth() {
     </div>
   );
 }
+
 
 

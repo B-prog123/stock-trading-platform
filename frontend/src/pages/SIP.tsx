@@ -170,7 +170,7 @@ export default function SIP() {
       const endpoint = editingSipId ? `/api/sip/${editingSipId}` : '/api/sip';
       const method = editingSipId ? 'PUT' : 'POST';
 
-      const res = await fetch(endpoint, {
+      const res = await fetch(apiUrl(endpoint), {
         method,
         headers: {
           'Content-Type': 'application/json',
@@ -417,12 +417,11 @@ export default function SIP() {
                       <td className="px-4 py-3 font-mono">{(sip.totalShares || 0).toFixed(4)}</td>
                       <td className="px-4 py-3">{sip.nextRunDate || '-'}</td>
                       <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${
-                          sip.status === 'ACTIVE' ? 'bg-emerald-500/15 text-emerald-400' :
-                          sip.status === 'PAUSED' ? 'bg-amber-500/15 text-amber-400' :
-                          sip.status === 'COMPLETED' ? 'bg-cyan-500/15 text-cyan-400' :
-                          'bg-rose-500/15 text-rose-400'
-                        }`}>
+                        <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${sip.status === 'ACTIVE' ? 'bg-emerald-500/15 text-emerald-400' :
+                            sip.status === 'PAUSED' ? 'bg-amber-500/15 text-amber-400' :
+                              sip.status === 'COMPLETED' ? 'bg-cyan-500/15 text-cyan-400' :
+                                'bg-rose-500/15 text-rose-400'
+                          }`}>
                           {sip.status}
                         </span>
                       </td>

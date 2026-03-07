@@ -27,7 +27,20 @@ if (!MONGODB_URI) {
   process.exit(1);
 }
 
-app.use(cors({ origin: FRONTEND_URL === "*" ? true : FRONTEND_URL, credentials: true }));
+const normalizeOrigin = (value: string) => value.trim().replace(/\/$/, "");
+const allowedOrigins = FRONTEND_URL === "*"
+  ? "*"
+  : FRONTEND_URL.split(",").map(normalizeOrigin).filter(Boolean);
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins === "*") return callback(null, true);
+    const normalized = normalizeOrigin(origin);
+    if (Array.isArray(allowedOrigins) && allowedOrigins.includes(normalized)) return callback(null, true);
+    return callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true
+}));
 app.use(express.json());
 
 const fallbackPrices: Record<string, number> = { AAPL: 182.63, TSLA: 202.64, NVDA: 726.13, MSFT: 409.72, GOOGL: 147.22, AMZN: 174.42 };
@@ -92,7 +105,9 @@ const getLimitedChatReply = (rawMessage: string) => {
   const msg = rawMessage.toLowerCase();
   const match = limitedChatSolutions.find((i) => i.keywords.some((k) => msg.includes(k)));
   if (match) return match.answer;
-  return `I support only limited questions right now. Ask one of these:\n${limitedChatSolutions.map((i, idx) => `${idx + 1}. ${i.prompt}`).join("\n")}`;
+  return `I support only limited questions right now. Ask one of these:
+${limitedChatSolutions.map((i, idx) => `${idx + 1}. ${i.prompt}`).join("
+")}`;
 };
 
 const authenticateToken = (req: any, res: any, next: any) => {
@@ -477,5 +492,7 @@ startServer().catch((error) => {
   console.error("Failed to start server:", error);
   process.exit(1);
 });
+
+
 
 
