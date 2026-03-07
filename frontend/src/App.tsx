@@ -219,7 +219,7 @@ export default function App() {
 
   return (
     <AuthContext.Provider value={providerValue}>
-      <div className="flex flex-col h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] font-sans overflow-hidden w-full relative">
+      <div className="flex flex-col fixed inset-0 bg-[var(--bg-primary)] text-[var(--text-primary)] font-sans overflow-hidden w-full h-[100dvh]">
         <div className="fixed top-24 right-4 md:right-8 z-[120] pointer-events-none">
           <div className="space-y-3">
             <AnimatePresence>
@@ -249,8 +249,8 @@ export default function App() {
 
         <Navbar />
 
-        <div className="flex flex-1 overflow-hidden min-h-0 w-full z-10">
-          <main className="flex-1 max-w-full overflow-x-hidden overflow-y-auto bg-[var(--bg-primary)] p-4 md:p-8 pb-24 lg:pb-8 relative scrollbar-hide">
+        <div className="flex flex-1 overflow-hidden min-h-0 w-full z-10 relative">
+          <main className="flex-1 max-w-full overflow-x-hidden overflow-y-auto bg-[var(--bg-primary)] p-4 md:p-8 pb-28 lg:pb-8 relative scrollbar-hide">
             {showAppBrief && (
               <div className="mb-6 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 md:p-5">
                 <div className="flex items-start justify-between gap-4">
