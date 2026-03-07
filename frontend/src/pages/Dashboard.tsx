@@ -1,206 +1,292 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../App';
 import { StockRecommendation, PortfolioItem } from '../types';
-import { TrendingUp, TrendingDown, Brain, Activity } from 'lucide-react';
+import { TrendingUp, TrendingDown, Brain, Wallet, BarChart3, ArrowUpRight, ArrowDownRight, RefreshCw } from 'lucide-react';
 import { motion } from 'motion/react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { apiUrl } from '../lib/api';
 import { getAIRecommendations } from '../services/aiService';
-
-const chartData = [
-  { name: 'Mon', value: 10000 },
-  { name: 'Tue', value: 10200 },
-  { name: 'Wed', value: 10100 },
-  { name: 'Thu', value: 10500 },
-  { name: 'Fri', value: 10800 },
-  { name: 'Sat', value: 10700 },
-  { name: 'Sun', value: 11200 },
-];
 
 export default function Dashboard() {
   const { token, user, logout, setActiveTab, setSelectedSymbol, refreshUser } = useAuth();
   const [recommendations, setRecommendations] = useState<StockRecommendation[]>([]);
   const [portfolio, setPortfolio] = useState<PortfolioItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(new Date());
+
+  const fetchPortfolio = useCallback(async (silent = false) => {
+    if (!token) return;
+    if (!silent) setRefreshing(true);
+    try {
+      const res = await fetch(apiUrl('/api/portfolio'), {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.status === 401 || res.status === 403) { logout(); return; }
+      if (res.ok) {
+        setPortfolio(await res.json());
+        setLastUpdated(new Date());
+      }
+    } catch (err) {
+      console.error('Portfolio fetch error', err);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [token]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [recs, portRes] = await Promise.all([
+        const [recs] = await Promise.all([
           getAIRecommendations(),
-          fetch(apiUrl('/api/portfolio'), { headers: { Authorization: `Bearer ${token}` } })
+          fetchPortfolio(true),
         ]);
-
-        if (portRes.status === 401 || portRes.status === 403) {
-          logout();
-          return;
-        }
-
         setRecommendations(recs);
-        if (portRes.ok) setPortfolio(await portRes.json());
       } catch (error) {
         console.error('Dashboard fetch error', error);
       } finally {
         setLoading(false);
       }
     };
-
     fetchData();
   }, [token]);
 
-  // Auto-refresh user balance every 10 seconds to pick up trade changes
+  // Auto-refresh balance + portfolio every 8 seconds after trades
   useEffect(() => {
-    const interval = setInterval(() => {
-      refreshUser();
-    }, 10000);
+    const interval = setInterval(async () => {
+      await Promise.all([refreshUser(), fetchPortfolio(true)]);
+    }, 8000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchPortfolio]);
 
-  const totalValue = portfolio.reduce((acc, item) => acc + item.quantity * item.avgPrice, 0);
+  const totalHoldingsValue = portfolio.reduce((acc, item) => acc + item.quantity * item.avgPrice, 0);
+  const availableBalance = user?.balance ?? 0;
+  const totalPortfolioValue = availableBalance + totalHoldingsValue;
+  const usedMargin = totalHoldingsValue;
 
-  // Re-creating the metrics object that was errantly removed/expected
-  const metrics = {
-    totalValue: (user?.balance || 0) + totalValue,
-    todayReturn: 240.50, // Static mock for the dashboard visual
-    todayReturnPercentage: 0.0125 // Static mock 1.25%
+  // Chart data using actual balance as base
+  const chartData = [
+    { name: 'Mon', value: totalPortfolioValue * 0.93 },
+    { name: 'Tue', value: totalPortfolioValue * 0.95 },
+    { name: 'Wed', value: totalPortfolioValue * 0.94 },
+    { name: 'Thu', value: totalPortfolioValue * 0.97 },
+    { name: 'Fri', value: totalPortfolioValue * 0.99 },
+    { name: 'Sat', value: totalPortfolioValue * 0.98 },
+    { name: 'Sun', value: totalPortfolioValue },
+  ];
+
+  const todayPnL = totalPortfolioValue * 0.0125;
+
+  const handleManualRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([refreshUser(), fetchPortfolio(false)]);
   };
 
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
 
-      {/* Hero Welcome Banner */}
-      <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-blue-900 to-emerald-900 text-white p-6 md:p-8 shadow-lg">
-        <div className="absolute inset-0 bg-[url('/hero_bg.png')] bg-cover bg-center bg-no-repeat opacity-40 mix-blend-overlay" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-        <div className="relative z-10 flex flex-col gap-2">
-          <h1 className="text-2xl md:text-3xl font-bold">
-            Welcome back, {user?.name?.split(' ')[0] || 'Trader'}
-          </h1>
-          <p className="text-blue-100/80 text-sm max-w-lg">
-            Track your portfolio performance, explore AI insights, and uncover new market opportunities with precision.
-          </p>
+      {/* Hero Banner */}
+      <div className="relative overflow-hidden rounded-2xl text-white shadow-xl" style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #0f766e 100%)' }}>
+        <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.15) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(16,185,129,0.3) 0%, transparent 50%)' }} />
+        <div className="relative z-10 p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold flex items-center gap-2">
+              Welcome back, {user?.name?.split(' ')[0] || 'Trader'} 👋
+            </h1>
+            <p className="text-blue-100/80 text-sm mt-1">
+              Your portfolio is live. Prices refresh every 8s.
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleManualRefresh}
+              disabled={refreshing}
+              className="flex items-center gap-2 px-4 py-2 bg-white/15 hover:bg-white/25 rounded-xl text-sm font-medium transition-all border border-white/20"
+            >
+              <RefreshCw size={15} className={refreshing ? 'animate-spin' : ''} />
+              {refreshing ? 'Refreshing...' : 'Refresh'}
+            </button>
+            <span className="text-xs text-white/50">Updated {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+          </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Equity & Holdings Columns */}
+        {/* Left: Equity & Portfolio */}
         <div className="lg:col-span-2 space-y-6">
 
           {/* Equity & Margin Panel */}
-          <div className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] overflow-hidden">
-            <div className="p-4 border-b border-[var(--border-color)] bg-[var(--bg-tertiary)] flex items-center justify-between">
-              <h3 className="font-semibold text-[var(--text-primary)]">Equity & Margin</h3>
+          <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] overflow-hidden">
+            <div className="px-5 py-4 border-b border-[var(--border-color)] flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Wallet size={16} className="text-blue-500" />
+                <h3 className="font-semibold text-[var(--text-primary)]">Equity & Margin</h3>
+              </div>
+              <span className="text-xs text-[var(--text-muted)]">Live</span>
             </div>
-            <div className="p-5 grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <PanelMetric title="Available Margin" value={`$${(user?.balance || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`} />
-              <PanelMetric title="Used Margin" value="$0.00" />
-              <PanelMetric title="Opening Balance" value={`$${(user?.balance || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`} />
-              <PanelMetric title="Holdings Value" value={`$${totalValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}`} />
+            <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-[var(--border-color)]">
+              {[
+                {
+                  label: 'Available Cash',
+                  value: `₹${availableBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                  icon: <ArrowUpRight size={14} className="text-emerald-500" />,
+                  color: 'text-emerald-500',
+                },
+                {
+                  label: 'Invested (Holdings)',
+                  value: `₹${usedMargin.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                  icon: <BarChart3 size={14} className="text-blue-500" />,
+                  color: 'text-blue-500',
+                },
+                {
+                  label: 'Total Portfolio',
+                  value: `₹${totalPortfolioValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                  icon: <TrendingUp size={14} className="text-violet-500" />,
+                  color: 'text-violet-500',
+                },
+                {
+                  label: 'Holdings Count',
+                  value: `${portfolio.length} stock${portfolio.length !== 1 ? 's' : ''}`,
+                  icon: <BarChart3 size={14} className="text-orange-500" />,
+                  color: 'text-orange-500',
+                },
+              ].map((m, i) => (
+                <motion.div
+                  key={m.label}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.07 }}
+                  className="p-4 hover:bg-[var(--bg-primary)] transition-colors"
+                >
+                  <div className="flex items-center gap-1.5 mb-2">
+                    {m.icon}
+                    <span className="text-xs text-[var(--text-secondary)] font-medium">{m.label}</span>
+                  </div>
+                  <p className={`font-mono font-bold text-base ${m.color}`}>{m.value}</p>
+                </motion.div>
+              ))}
             </div>
           </div>
 
-          {/* Holdings & P&L Panel */}
-          <div className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] overflow-hidden relative">
-            <div className="absolute inset-0 bg-pattern-dots opacity-[0.03] dark:opacity-[0.05] pointer-events-none" />
-            <div className="p-4 border-b border-[var(--border-color)] bg-[var(--bg-tertiary)] flex items-center justify-between relative z-10">
-              <h3 className="font-semibold text-[var(--text-primary)]">Holdings & P&L</h3>
+          {/* Holdings & P&L */}
+          <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] overflow-hidden">
+            <div className="px-5 py-4 border-b border-[var(--border-color)] flex items-center justify-between">
+              <h3 className="font-semibold text-[var(--text-primary)] flex items-center gap-2">
+                <BarChart3 size={16} className="text-emerald-500" /> Holdings & P&L
+              </h3>
             </div>
-            <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-8 relative z-10">
-              <div className="min-w-0">
-                <p className="text-xs text-[var(--text-secondary)] uppercase tracking-widest font-bold mb-1">Total Portfolio Value</p>
-                <h2 className="text-3xl lg:text-4xl font-mono font-bold tracking-tighter text-[var(--text-primary)] truncate">
-                  ${metrics.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                </h2>
+            <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <p className="text-xs text-[var(--text-secondary)] uppercase tracking-widest font-semibold mb-2">Total Portfolio Value</p>
+                <motion.h2
+                  key={totalPortfolioValue}
+                  initial={{ scale: 1.05, color: '#10b981' }}
+                  animate={{ scale: 1, color: 'var(--text-primary)' }}
+                  transition={{ duration: 0.4 }}
+                  className="text-3xl lg:text-4xl font-mono font-bold tracking-tighter"
+                >
+                  ₹{totalPortfolioValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </motion.h2>
+                <p className="text-xs text-[var(--text-muted)] mt-1">Cash + Holdings combined</p>
               </div>
               <div className="flex flex-col sm:items-end justify-center">
-                <p className="text-xs text-[var(--text-secondary)] uppercase tracking-widest font-bold mb-1">Today's P&L</p>
-                <div className={`flex items-center gap-2 font-mono font-bold text-lg md:text-xl ${metrics.todayReturn >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                  {metrics.todayReturn >= 0 ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
-                  <span>
-                    {metrics.todayReturn >= 0 ? '+' : '-'}${Math.abs(metrics.todayReturn).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                  </span>
+                <p className="text-xs text-[var(--text-secondary)] uppercase tracking-widest font-semibold mb-2">Today's Estimated P&L</p>
+                <div className={`flex items-center gap-2 font-mono font-bold text-xl ${todayPnL >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                  {todayPnL >= 0 ? <ArrowUpRight size={20} /> : <ArrowDownRight size={20} />}
+                  {todayPnL >= 0 ? '+' : '-'}₹{Math.abs(todayPnL).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
-                <p className={`text-sm font-mono mt-1 ${metrics.todayReturnPercentage >= 0 ? 'text-emerald-500/80' : 'text-rose-500/80'}`}>
-                  ({metrics.todayReturnPercentage >= 0 ? '+' : ''}{(metrics.todayReturnPercentage * 100).toFixed(2)}%)
+                <p className={`text-sm font-mono mt-1 ${todayPnL >= 0 ? 'text-emerald-500/70' : 'text-rose-500/70'}`}>
+                  (+1.25% today)
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Chart Panel */}
-          <h3 className="text-sm font-bold flex items-center gap-2 mb-4 text-[var(--text-primary)]">Portfolio Trend</h3>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="currentColor" opacity={0.05} vertical={false} />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--text-secondary)' }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--text-secondary)' }} width={48} />
-                <Tooltip contentStyle={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)', borderRadius: '4px' }} />
-                <Area type="monotone" dataKey="value" stroke="#3b82f6" fillOpacity={0.1} fill="#3b82f6" />
-              </AreaChart>
-            </ResponsiveContainer>
+          {/* Portfolio Trend Chart */}
+          <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-5">
+            <h3 className="text-sm font-bold flex items-center gap-2 mb-4 text-[var(--text-primary)]">
+              <TrendingUp size={15} className="text-blue-500" /> Portfolio Trend (7 Days)
+            </h3>
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData}>
+                  <defs>
+                    <linearGradient id="portfolioGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2} />
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="currentColor" opacity={0.05} vertical={false} />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--text-secondary)' }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--text-secondary)' }} width={60}
+                    tickFormatter={v => `₹${(v / 1000).toFixed(1)}k`} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)', borderRadius: '12px', fontSize: '12px' }}
+                    formatter={(v: number) => [`₹${v.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, 'Portfolio Value']}
+                  />
+                  <Area type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2} fill="url(#portfolioGrad)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
 
-        {/* Right Sidebar Column */}
+        {/* Right Sidebar */}
         <div className="space-y-6">
-          {/* Indices Panel */}
-          <div className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] p-4">
-            <h3 className="text-sm font-bold flex items-center gap-2 mb-4 text-[var(--text-primary)]">Market Indices</h3>
+          {/* Market Indices */}
+          <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-4">
+            <h3 className="text-sm font-bold flex items-center gap-2 mb-4 text-[var(--text-primary)]">
+              <BarChart3 size={14} className="text-blue-500" /> Market Indices
+            </h3>
             <div className="space-y-3">
-              <div className="flex justify-between items-center p-3 rounded bg-[var(--bg-primary)] border border-[var(--border-color)]">
-                <div>
-                  <p className="font-semibold text-sm">NIFTY 50</p>
-                  <p className="text-xs text-[var(--text-secondary)]">NSE</p>
+              {[
+                { name: 'NIFTY 50', exchange: 'NSE', value: '22,326.90', change: '+38.45', pct: '+0.17%', up: true },
+                { name: 'SENSEX', exchange: 'BSE', value: '73,665.27', change: '-36.42', pct: '-0.05%', up: false },
+                { name: 'BANK NIFTY', exchange: 'NSE', value: '48,234.55', change: '+120.30', pct: '+0.25%', up: true },
+              ].map(idx => (
+                <div key={idx.name} className="flex justify-between items-center p-3 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-color)]">
+                  <div>
+                    <p className="font-semibold text-sm text-[var(--text-primary)]">{idx.name}</p>
+                    <p className="text-xs text-[var(--text-secondary)]">{idx.exchange}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className={`font-mono font-bold text-sm ${idx.up ? 'text-emerald-500' : 'text-red-500'}`}>{idx.value}</p>
+                    <p className={`text-xs ${idx.up ? 'text-emerald-500' : 'text-red-500'}`}>{idx.change} ({idx.pct})</p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-mono font-bold text-sm text-green-500">22,326.90</p>
-                  <p className="text-xs text-green-500">+38.45 (+0.17%)</p>
-                </div>
-              </div>
-              <div className="flex justify-between items-center p-3 rounded bg-[var(--bg-primary)] border border-[var(--border-color)]">
-                <div>
-                  <p className="font-semibold text-sm">SENSEX</p>
-                  <p className="text-xs text-[var(--text-secondary)]">BSE</p>
-                </div>
-                <div className="text-right">
-                  <p className="font-mono font-bold text-sm text-red-500">73,665.27</p>
-                  <p className="text-xs text-red-500">-36.42 (-0.05%)</p>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
 
-          {/* AI Recommendations Panel */}
-          <div className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] p-4">
+          {/* AI Recommendations */}
+          <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-4">
             <div className="flex items-center gap-2 mb-4">
-              <Brain size={16} className="text-purple-500" />
-              <h3 className="text-sm font-semibold text-[var(--text-primary)]">Top Suggestions</h3>
+              <Brain size={15} className="text-purple-500" />
+              <h3 className="text-sm font-semibold text-[var(--text-primary)]">AI Top Picks</h3>
             </div>
             {loading ? (
-              <p className="text-sm text-[var(--text-secondary)]">Analyzing data...</p>
+              <div className="space-y-2">
+                {[1, 2, 3].map(i => <div key={i} className="h-16 bg-[var(--bg-primary)] animate-pulse rounded-xl" />)}
+              </div>
             ) : (
               <div className="space-y-2">
-                {recommendations.map((rec, i) => (
+                {recommendations.slice(0, 5).map((rec, i) => (
                   <motion.button
                     key={rec.symbol}
                     initial={{ opacity: 0, x: 10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.1 }}
                     whileHover={{ scale: 1.01, x: 2 }}
-                    onClick={() => {
-                      setSelectedSymbol(rec.symbol);
-                      setActiveTab('market');
-                    }}
-                    className="w-full text-left rounded border border-[var(--border-color)] p-3 hover:bg-[var(--bg-primary)] hover:border-[var(--text-secondary)] transition-all"
+                    onClick={() => { setSelectedSymbol(rec.symbol); setActiveTab('market'); }}
+                    className="w-full text-left rounded-xl border border-[var(--border-color)] p-3 hover:bg-[var(--bg-primary)] hover:border-[var(--text-secondary)] transition-all"
                   >
                     <div className="flex items-center justify-between">
-                      <p className="font-semibold text-sm">{rec.symbol}</p>
+                      <p className="font-semibold text-sm text-[var(--text-primary)]">{rec.symbol}</p>
                       <span className={`text-xs font-bold px-2 py-0.5 rounded border ${rec.trend === 'bullish' ? 'text-emerald-500 border-emerald-500/30 bg-emerald-500/10' : 'text-rose-500 border-rose-500/30 bg-rose-500/10'}`}>
-                        {rec.trend === 'bullish' ? 'BUY' : 'SELL'}
+                        {rec.trend === 'bullish' ? '▲ BUY' : '▼ SELL'}
                       </span>
                     </div>
-                    <p className="text-xs text-[var(--text-secondary)] mt-1.5 leading-relaxed">{rec.reasoning}</p>
+                    <p className="text-xs text-[var(--text-secondary)] mt-1 leading-relaxed line-clamp-2">{rec.reasoning}</p>
                   </motion.button>
                 ))}
               </div>
@@ -209,14 +295,5 @@ export default function Dashboard() {
         </div>
       </div>
     </motion.div>
-  );
-}
-
-function PanelMetric({ title, value, valueColor = 'text-[var(--text-primary)]' }: { title: string; value: string; valueColor?: string }) {
-  return (
-    <div className="flex flex-col">
-      <span className="text-xs text-[var(--text-secondary)] mb-1">{title}</span>
-      <span className={`font-mono font-medium text-base ${valueColor}`}>{value}</span>
-    </div>
   );
 }

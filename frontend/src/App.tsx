@@ -16,6 +16,7 @@ import SIP from './pages/SIP';
 import Watchlist from './pages/Watchlist';
 import Onboarding from './pages/Onboarding';
 import AIChatbot from './components/AIChatbot';
+import Tutorial from './components/Tutorial';
 import Auth from './pages/Auth';
 import { motion, AnimatePresence } from 'motion/react';
 import { X } from 'lucide-react';
@@ -65,6 +66,7 @@ export default function App() {
   const [toastNotifications, setToastNotifications] = useState<Notification[]>([]);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
   const [showAppBrief, setShowAppBrief] = useState(false);
 
   useEffect(() => {
@@ -87,6 +89,11 @@ export default function App() {
     localStorage.setItem('hasSeenOnboarding', 'true');
   };
 
+  const completeTutorial = () => {
+    setShowTutorial(false);
+    localStorage.setItem('hasSeenTutorial', 'true');
+  };
+
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
     localStorage.setItem('theme', theme);
@@ -102,6 +109,8 @@ export default function App() {
     if (!localStorage.getItem('hasSeenOnboarding')) {
       setShowOnboarding(true);
     }
+    // Show tutorial after every new login (clears on logout)
+    setShowTutorial(true);
   };
 
   const logout = () => {
@@ -295,6 +304,11 @@ export default function App() {
 
             {showOnboarding && <Onboarding onComplete={completeOnboarding} />}
             <AIChatbot />
+
+            {/* Tutorial Overlay - shows after every login */}
+            <AnimatePresence>
+              {showTutorial && <Tutorial onComplete={completeTutorial} />}
+            </AnimatePresence>
           </main>
 
           <MobileNav activeTab={activeTab} setActiveTab={setActiveTab} />
