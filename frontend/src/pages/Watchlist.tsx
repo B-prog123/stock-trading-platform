@@ -110,26 +110,6 @@ export default function Watchlist() {
 
   return (
     <div className="flex flex-col h-full bg-[var(--bg-secondary)] border-r border-[var(--border-color)]">
-      {/* Search Bar */}
-      <div className="p-3 border-b border-[var(--border-color)] flex flex-col gap-2 relative z-10">
-        <form onSubmit={addToWatchlist} className="flex gap-2 w-full">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" size={14} />
-            <input
-              type="text"
-              placeholder="Search eg: infy bse, nifty fut"
-              className="w-full bg-[var(--bg-primary)] border border-transparent focus:border-blue-500 rounded py-2 pl-9 pr-3 text-sm focus:outline-none transition-colors"
-              value={newSymbol}
-              onChange={(e) => setNewSymbol(e.target.value)}
-            />
-          </div>
-          <button type="submit" className="px-3 bg-blue-500 text-white rounded font-medium text-xs hover:bg-blue-600 transition-colors hidden sm:block">
-            Add
-          </button>
-        </form>
-        {message && <div className="text-xs text-red-500 px-1 font-medium">{message}</div>}
-      </div>
-
       {/* Watchlist Items */}
       <div className="flex-1 overflow-y-auto scrollbar-hide">
         {loading ? (

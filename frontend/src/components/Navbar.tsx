@@ -4,14 +4,24 @@ import {
   Sun,
   Moon,
   Trash2,
+  Search
 } from 'lucide-react';
 import { useAuth } from '../App';
 import { AnimatePresence, motion } from 'motion/react';
 
 export default function Navbar() {
-  const { user, logout, theme, toggleTheme, notifications, clearNotifications, activeTab, setActiveTab } = useAuth();
+  const { user, logout, theme, toggleTheme, notifications, clearNotifications, activeTab, setActiveTab, setSelectedSymbol } = useAuth();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    setSelectedSymbol(searchQuery.toUpperCase().trim());
+    setActiveTab('market');
+    setSearchQuery('');
+  };
 
   const unreadCount = (notifications || []).filter((n) => !n.read).length;
 
@@ -51,7 +61,20 @@ export default function Navbar() {
         </div>
       </div>
 
-      <div className="flex items-center gap-4 h-full">
+      <div className="hidden lg:flex flex-1 max-w-md mx-8">
+        <form onSubmit={handleSearch} className="relative w-full">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" size={16} />
+          <input
+            type="text"
+            placeholder="Search stocks, indices, eg: INFY, NIFTY"
+            className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] focus:border-blue-500 rounded-lg py-1.5 pl-9 pr-4 text-sm focus:outline-none transition-colors"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </form>
+      </div>
+
+      <div className="flex items-center gap-4 h-full shrink-0">
         <div className="hidden lg:flex items-center gap-6 text-xs font-semibold mr-4">
           {indexData.map(idx => (
             <div key={idx.name} className="flex gap-2 items-center">
