@@ -65,6 +65,11 @@
     @apply bg-slate-300 dark:bg-slate-700 rounded-full;
   }
 
+  .bg-pattern-dots {
+    background-image: radial-gradient(var(--text-secondary) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
   .glass-card {
     background-color: var(--card-bg);
     border: 1px solid var(--border-color);

@@ -66,12 +66,24 @@ export default function Dashboard() {
         <p className="text-[var(--text-secondary)] text-sm">Dashboard overview</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card title="Available Margin" value={`$${(user?.balance || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`} icon={null} />
-        <Card title="Account Value" value={`$${((user?.balance || 0) + totalValue).toLocaleString(undefined, { maximumFractionDigits: 2 })}`} icon={null} />
-        <Card title="Holdings Value" value={`$${totalValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}`} icon={null} />
-        <Card title="P&L" value="+$240.50" valueColor="text-green-500" icon={null} />
-      </div>
+      <motion.div
+        variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.1 } } }}
+        initial="hidden" animate="show"
+        className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6"
+      >
+        <motion.div variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}>
+          <Card title="Available Margin" value={`$${(user?.balance || 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}`} icon={null} />
+        </motion.div>
+        <motion.div variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}>
+          <Card title="Account Value" value={`$${((user?.balance || 0) + totalValue).toLocaleString(undefined, { maximumFractionDigits: 2 })}`} icon={null} />
+        </motion.div>
+        <motion.div variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}>
+          <Card title="Holdings Value" value={`$${totalValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}`} icon={null} />
+        </motion.div>
+        <motion.div variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}>
+          <Card title="P&L" value="+$240.50" valueColor="text-green-500" icon={null} />
+        </motion.div>
+      </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 rounded border border-[var(--border-color)] bg-[var(--bg-secondary)] p-4">
@@ -89,11 +101,12 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="rounded border border-[var(--border-color)] bg-[var(--bg-secondary)] p-4">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-2 text-[var(--text-primary)]">
-            <div>
+        <div className="rounded border border-[var(--border-color)] bg-[var(--bg-secondary)] p-4 relative overflow-hidden">
+          <div className="absolute inset-0 bg-pattern-dots opacity-[0.03] dark:opacity-[0.05] pointer-events-none" />
+          <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-2 text-[var(--text-primary)]">
+            <div className="w-full min-w-0">
               <p className="text-[10px] text-[var(--text-secondary)] uppercase tracking-widest font-bold mb-1">Total Account Value</p>
-              <h2 className="text-3xl md:text-5xl font-mono font-bold tracking-tighter">
+              <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-[42px] xl:text-5xl font-mono font-bold tracking-tighter truncate md:break-words md:whitespace-normal">
                 ${metrics.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
               </h2>
             </div>
@@ -113,15 +126,19 @@ export default function Dashboard() {
           {loading ? (
             <p className="text-sm text-[var(--text-secondary)]">Loading insights...</p>
           ) : (
-            <div className="space-y-2">
-              {recommendations.map((rec) => (
-                <button
+            <div className="space-y-2 relative z-10">
+              {recommendations.map((rec, i) => (
+                <motion.button
                   key={rec.symbol}
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                  whileHover={{ scale: 1.01, x: 2 }}
                   onClick={() => {
                     setSelectedSymbol(rec.symbol);
                     setActiveTab('market');
                   }}
-                  className="w-full text-left rounded border border-[var(--border-color)] p-3 hover:bg-[var(--bg-primary)] transition-colors"
+                  className="w-full text-left rounded border border-[var(--border-color)] p-3 hover:bg-[var(--bg-primary)] hover:border-[var(--text-secondary)] transition-all"
                 >
                   <div className="flex items-center justify-between">
                     <p className="font-semibold text-sm">{rec.symbol}</p>
@@ -130,7 +147,7 @@ export default function Dashboard() {
                     </span>
                   </div>
                   <p className="text-xs text-[var(--text-secondary)] mt-1.5 leading-relaxed">{rec.reasoning}</p>
-                </button>
+                </motion.button>
               ))}
             </div>
           )}
@@ -142,12 +159,12 @@ export default function Dashboard() {
 
 function Card({ title, value, icon, valueColor = 'text-[var(--text-primary)]' }: { title: string; value: string; icon: React.ReactNode; valueColor?: string }) {
   return (
-    <div className="flex flex-col border-r last:border-0 border-[var(--border-color)] px-4">
+    <motion.div whileHover={{ y: -2 }} className="flex flex-col border-r last:border-0 border-[var(--border-color)] px-4">
       <div className="flex items-center gap-2 text-[var(--text-secondary)] text-xs mb-1 font-medium">
         {title}
         {icon}
       </div>
       <p className={`text-xl font-medium tracking-tight ${valueColor}`}>{value}</p>
-    </div>
+    </motion.div>
   );
 }
