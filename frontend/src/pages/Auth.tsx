@@ -1,8 +1,8 @@
-﻿import React, { useState, useRef } from 'react';
+﻿import React, { useState } from 'react';
 import { useAuth } from '../App';
 import { motion, AnimatePresence } from 'motion/react';
 import {
-  Mail, Lock, User, Phone, ArrowRight, ArrowLeft,
+  Mail, Lock, User, ArrowRight, ArrowLeft,
   Shield, CheckCircle2, TrendingUp, Eye, EyeOff
 } from 'lucide-react';
 import { apiUrl } from '../lib/api';
@@ -13,21 +13,6 @@ type Step = 'details' | 'otp';
 
 export default function Auth() {
   const { login } = useAuth();
-
-  const [isLogin, setIsLogin] = useState(true);
-  const [step, setStep] = useState<Step>('details');
-
-  // Form fields
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPass, setShowPass] = useState(false);
-
-  // OTP
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
-  const [devOtp, setDevOtp] = useState('');
-  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // State
   const [loading, setLoading] = useState(false);
@@ -77,70 +62,17 @@ export default function Auth() {
     finally { setLoading(false); }
   };
 
-  // ── handle OTP submit ───────────────────────────────────────────────────────
-  const handleOtpSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const code = otp.join('');
-    if (code.length < 6) { setError('Please enter the complete 6-digit OTP'); return; }
-    setError('');
-    setLoading(true);
 
-    try {
-      // Verify OTP
-      const verRes = await fetch(apiUrl('/api/auth/verify-otp'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, otp: code }),
-      });
-      const verData = await verRes.json();
-      if (!verRes.ok) { setError(verData?.error || 'Invalid OTP'); return; }
-
-      // Register the user
-      const regRes = await fetch(apiUrl('/api/auth/register'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, name, phone }),
-      });
-      const regData = await regRes.json();
-      if (!regRes.ok) { setError(regData?.error || 'Registration failed'); return; }
-
-      setInfo('Account created successfully! Please sign in.');
-      switchToLogin();
-    } catch { setError('Network error. Please try again.'); }
-    finally { setLoading(false); }
-  };
 
   const switchToLogin = () => {
-    setIsLogin(true); setStep('details'); setOtp(['', '', '', '', '', '']);
-    setDevOtp(''); setName(''); setPhone(''); setPassword(''); setError('');
+    setIsLogin(true); setName(''); setPassword(''); setError('');
   };
 
   const switchToRegister = () => {
-    setIsLogin(false); setStep('details'); setOtp(['', '', '', '', '', '']);
-    setDevOtp(''); setError(''); setInfo('');
+    setIsLogin(false); setError(''); setInfo('');
   };
 
-  const resendOtp = async () => {
-    setError('');
-    try {
-      const res = await fetch(apiUrl('/api/auth/send-otp'), {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone }),
-      });
-      const data = await res.json();
-      if (data.otp) setDevOtp(data.otp);
-    } catch { setError('Failed to resend OTP.'); }
-  };
 
-  // OTP box helpers
-  const handleOtpChange = (idx: number, val: string) => {
-    if (!/^\d*$/.test(val)) return;
-    const next = [...otp]; next[idx] = val.slice(-1); setOtp(next);
-    if (val && idx < 5) otpRefs.current[idx + 1]?.focus();
-  };
-  const handleOtpKey = (idx: number, e: React.KeyboardEvent) => {
-    if (e.key === 'Backspace' && !otp[idx] && idx > 0) otpRefs.current[idx - 1]?.focus();
-  };
 
   return (
     <div className="min-h-screen bg-white text-[var(--text-primary)] flex items-center justify-center p-4 relative overflow-hidden">
@@ -240,7 +172,7 @@ export default function Auth() {
       </div>
 
       {/* Ticker - Light theme */}
-      <div className="fixed top-0 left-0 right-0 z-20 bg-white/80 backdrop-blur-md text-emerald-600 text-[10px] font-black py-2 overflow-hidden border-b border-gray-200 uppercase tracking-widest">
+      <div className="fixed top-0 left-0 right-0 z-20 bg-white/80 backdrop-blur-md text-emerald-600 text-[10px] font-black py-2 overflow-hidden border-b border-gray-200 uppercase tracking-widest hidden md:block">
         <motion.div className="flex gap-10 whitespace-nowrap w-max"
           animate={{ x: [0, -900] }} transition={{ duration: 25, repeat: Infinity, ease: 'linear' }}>
           {[...tickerTape, ...tickerTape].map((t, i) => <span key={i} className="mx-6 flex items-center gap-2">
@@ -267,31 +199,14 @@ export default function Auth() {
               </div>
             </div>
 
-            {/* Step title */}
-            <AnimatePresence mode="wait">
-              {step === 'details' ? (
-                <motion.div key="title-details" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}>
-                  <h2 className="text-xl font-bold text-[var(--text-primary)]">
-                    {isLogin ? 'Sign in to your account' : 'Create your account'}
-                  </h2>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    {isLogin ? 'Enter your credentials to continue trading' : 'Fill in your details to get started'}
-                  </p>
-                </motion.div>
-              ) : (
-                <motion.div key="title-otp" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}>
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="w-8 h-8 bg-emerald-500/10 rounded-xl flex items-center justify-center">
-                      <Shield size={16} className="text-emerald-500" />
-                    </div>
-                    <h2 className="text-xl font-bold text-[var(--text-primary)]">Verify OTP</h2>
-                  </div>
-                  <p className="text-xs text-[var(--text-muted)] mt-1">
-                    We sent a 6-digit code to <strong className="text-[var(--text-primary)]">+91 {phone}</strong>
-                  </p>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            <motion.div key="title-details" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}>
+              <h2 className="text-xl font-bold text-[var(--text-primary)]">
+                {isLogin ? 'Sign in to your account' : 'Create your account'}
+              </h2>
+              <p className="text-xs text-[var(--text-muted)] mt-1">
+                {isLogin ? 'Enter your credentials to continue trading' : 'Fill in your details to get started'}
+              </p>
+            </motion.div>
           </div>
 
           <div className="px-8 pb-6">
@@ -312,123 +227,57 @@ export default function Auth() {
             </AnimatePresence>
 
             <AnimatePresence mode="wait">
-              {/* ── STEP 1: Details Form ── */}
-              {step === 'details' && (
-                <motion.form key="details" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}
-                  onSubmit={handleDetailsSubmit} className="space-y-3">
+              {/* Details Form (Only 1 Step Now) */}
+              <motion.form key="details" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}
+                onSubmit={handleDetailsSubmit} className="space-y-3">
 
-                  {/* Name (register only) */}
-                  {!isLogin && (
-                    <div className="relative">
-                      <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
-                      <input required value={name} onChange={e => setName(e.target.value)} placeholder="Full Name"
-                        className="w-full pl-10 pr-4 py-3 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-color)] text-sm focus:outline-none focus:border-blue-500 transition-colors text-[var(--text-primary)]" />
-                    </div>
-                  )}
-
-                  {/* Email */}
+                {/* Name (register only) */}
+                {!isLogin && (
                   <div className="relative">
-                    <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
-                    <input required type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email Address"
+                    <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+                    <input required value={name} onChange={e => setName(e.target.value)} placeholder="Full Name"
                       className="w-full pl-10 pr-4 py-3 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-color)] text-sm focus:outline-none focus:border-blue-500 transition-colors text-[var(--text-primary)]" />
                   </div>
+                )}
 
-                  {/* Mobile (register only) */}
-                  {!isLogin && (
-                    <div className="flex items-center border border-[var(--border-color)] rounded-xl bg-[var(--bg-primary)] overflow-hidden focus-within:border-blue-500 transition-colors">
-                      <span className="px-3.5 py-3 text-sm font-semibold text-[var(--text-secondary)] border-r border-[var(--border-color)] bg-[var(--bg-secondary)] whitespace-nowrap">🇮🇳 +91</span>
-                      <input
-                        required
-                        value={phone}
-                        onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                        placeholder="10-digit mobile number"
-                        inputMode="numeric"
-                        maxLength={10}
-                        className="flex-1 px-4 py-3 bg-transparent text-sm focus:outline-none text-[var(--text-primary)]"
-                      />
-                    </div>
+                {/* Email */}
+                <div className="relative">
+                  <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+                  <input required type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email Address"
+                    className="w-full pl-10 pr-4 py-3 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-color)] text-sm focus:outline-none focus:border-blue-500 transition-colors text-[var(--text-primary)]" />
+                </div>
+
+                {/* Password */}
+                <div className="relative">
+                  <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+                  <input required type={showPass ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="Password"
+                    className="w-full pl-10 pr-10 py-3 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-color)] text-sm focus:outline-none focus:border-blue-500 transition-colors text-[var(--text-primary)]" />
+                  <button type="button" onClick={() => setShowPass(s => !s)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
+                    {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
+
+                <motion.button type="submit" disabled={loading}
+                  whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                  className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-emerald-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg disabled:opacity-60 text-sm mt-2">
+                  {loading ? (
+                    <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Please wait...</>
+                  ) : isLogin ? (
+                    <><ArrowRight size={16} /> Sign In</>
+                  ) : (
+                    <><CheckCircle2 size={16} /> Create Account</>
                   )}
+                </motion.button>
 
-                  {/* Password */}
-                  <div className="relative">
-                    <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
-                    <input required type={showPass ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="Password"
-                      className="w-full pl-10 pr-10 py-3 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-color)] text-sm focus:outline-none focus:border-blue-500 transition-colors text-[var(--text-primary)]" />
-                    <button type="button" onClick={() => setShowPass(s => !s)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
-                      {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
-                    </button>
-                  </div>
-
-                  <motion.button type="submit" disabled={loading}
-                    whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-                    className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-emerald-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg disabled:opacity-60 text-sm mt-2">
-                    {loading ? (
-                      <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Please wait...</>
-                    ) : isLogin ? (
-                      <><ArrowRight size={16} /> Sign In</>
-                    ) : (
-                      <><Phone size={16} /> Send OTP to Mobile</>
-                    )}
-                  </motion.button>
-
-                  <p className="text-center text-xs text-[var(--text-muted)] pt-1">
-                    {isLogin ? "New to Stockify? " : 'Already have an account? '}
-                    <button type="button" onClick={isLogin ? switchToRegister : switchToLogin}
-                      className="text-blue-500 font-semibold hover:underline">
-                      {isLogin ? 'Create Account' : 'Sign In'}
-                    </button>
-                  </p>
-                </motion.form>
-              )}
-
-              {/* ── STEP 2: OTP Verification ── */}
-              {step === 'otp' && (
-                <motion.form key="otp" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
-                  onSubmit={handleOtpSubmit} className="space-y-5">
-
-                  {/* Dev OTP hint */}
-                  {devOtp && (
-                    <div className="flex items-center justify-center gap-2 bg-amber-500/10 border border-amber-500/25 rounded-xl px-4 py-2.5 text-xs">
-                      <span>🔧 Dev OTP:</span>
-                      <strong className="text-amber-400 text-base tracking-widest">{devOtp}</strong>
-                    </div>
-                  )}
-
-                  {/* 6 OTP digit boxes */}
-                  <div className="flex justify-center gap-2.5">
-                    {otp.map((digit, idx) => (
-                      <input key={idx} type="text" inputMode="numeric" maxLength={1} value={digit}
-                        ref={el => { otpRefs.current[idx] = el; }}
-                        onChange={e => handleOtpChange(idx, e.target.value)}
-                        onKeyDown={e => handleOtpKey(idx, e)}
-                        className="w-11 h-13 text-center text-xl font-bold rounded-xl border-2 bg-[var(--bg-primary)] focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all text-[var(--text-primary)] border-[var(--border-color)]"
-                        style={{ height: '52px' }}
-                      />
-                    ))}
-                  </div>
-
-                  <motion.button type="submit" disabled={loading || otp.join('').length < 6}
-                    whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-                    className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-emerald-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg disabled:opacity-60 text-sm">
-                    {loading ? (
-                      <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Verifying...</>
-                    ) : (
-                      <><CheckCircle2 size={16} /> Verify & Create Account</>
-                    )}
-                  </motion.button>
-
-                  <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
-                    <button type="button" onClick={() => { setStep('details'); setOtp(['', '', '', '', '', '']); setError(''); }}
-                      className="flex items-center gap-1 hover:text-[var(--text-primary)] transition-colors">
-                      <ArrowLeft size={12} /> Edit Details
-                    </button>
-                    <button type="button" onClick={resendOtp} className="text-blue-500 hover:underline">
-                      Resend OTP
-                    </button>
-                  </div>
-                </motion.form>
-              )}
+                <p className="text-center text-xs text-[var(--text-muted)] pt-1">
+                  {isLogin ? "New to Stockify? " : 'Already have an account? '}
+                  <button type="button" onClick={isLogin ? switchToRegister : switchToLogin}
+                    className="text-blue-500 font-semibold hover:underline">
+                    {isLogin ? 'Create Account' : 'Sign In'}
+                  </button>
+                </p>
+              </motion.form>
             </AnimatePresence>
           </div>
 

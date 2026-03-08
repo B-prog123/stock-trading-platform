@@ -6,6 +6,7 @@ import { apiUrl } from '../lib/api';
 import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
 
 import TradingViewWidget from '../components/TradingViewWidget';
+import { sharedStockData } from './Screener';
 
 interface StockQuote {
   symbol: string;
@@ -24,15 +25,12 @@ interface SimpleChartPoint {
   price: number;
 }
 
-const popularStocks: StockQuote[] = [
-  { symbol: 'RELIANCE', name: 'Reliance Industries', price: 2950.25, change: 1.25 },
-  { symbol: 'TCS', name: 'Tata Consultancy Services', price: 4120.64, change: -0.41 },
-  { symbol: 'HDFCBANK', name: 'HDFC Bank Ltd.', price: 1450.13, change: 2.82 },
-  { symbol: 'INFY', name: 'Infosys Limited', price: 1680.72, change: 0.85 },
-  { symbol: 'ICICIBANK', name: 'ICICI Bank Ltd.', price: 1050.22, change: -0.12 },
-  { symbol: 'SBIN', name: 'State Bank of India', price: 780.42, change: 1.15 },
-  { symbol: 'WIPRO', name: 'Wipro Limited', price: 452.10, change: -0.90 },
-];
+const popularStocks: StockQuote[] = sharedStockData.map(s => ({
+  symbol: s.symbol,
+  name: s.name,
+  price: s.price,
+  change: s.change
+}));
 
 const stockMeta: Record<string, StockMeta> = {
   RELIANCE: { marketCap: '19.84T', avgVolume: '5.4M' },
@@ -42,6 +40,9 @@ const stockMeta: Record<string, StockMeta> = {
   ICICIBANK: { marketCap: '7.84T', avgVolume: '15.5M' },
   SBIN: { marketCap: '6.81T', avgVolume: '21.7M' },
   WIPRO: { marketCap: '2.44T', avgVolume: '4.2M' },
+  ADANIENT: { marketCap: '3.5T', avgVolume: '12.1M' },
+  ITC: { marketCap: '5.3T', avgVolume: '14.3M' },
+  'L&T': { marketCap: '4.8T', avgVolume: '3.5M' },
 };
 
 const intervalSeeds: Record<string, { labels: string[]; movement: number[] }> = {

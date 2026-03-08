@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Filter, TrendingUp, TrendingDown, Activity, ArrowRight, Zap } from 'lucide-react';
+import { useAuth } from '../App';
 
-const mockScreenerData = [
+export const sharedStockData = [
     { symbol: 'RELIANCE', name: 'Reliance Industries', price: 2950.25, change: 1.25, volume: '5.4M', sector: 'Energy', pe: '28.4' },
     { symbol: 'TCS', name: 'Tata Consultancy Services', price: 4120.64, change: -0.41, volume: '2.2M', sector: 'IT', pe: '32.1' },
     { symbol: 'HDFCBANK', name: 'HDFC Bank Ltd.', price: 1450.13, change: 2.82, volume: '18.8M', sector: 'Finance', pe: '18.5' },
@@ -16,11 +17,12 @@ const mockScreenerData = [
 ];
 
 export default function Screener() {
+    const { setSelectedSymbol, setActiveTab } = useAuth();
     const [filter, setFilter] = useState<'all' | 'gainers' | 'losers' | 'volume'>('all');
-    const [data, setData] = useState(mockScreenerData);
+    const [data, setData] = useState(sharedStockData);
 
     useEffect(() => {
-        let sorted = [...mockScreenerData];
+        let sorted = [...sharedStockData];
         if (filter === 'gainers') {
             sorted = sorted.filter(s => s.change > 0).sort((a, b) => b.change - a.change);
         } else if (filter === 'losers') {
@@ -100,8 +102,14 @@ export default function Screener() {
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-center">
-                                        <button className="p-2 rounded-xl bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white transition-all">
-                                            <ArrowRight size={16} />
+                                        <button
+                                            onClick={() => {
+                                                setSelectedSymbol(stock.symbol);
+                                                setActiveTab('market');
+                                            }}
+                                            className="px-4 py-2 rounded-xl bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white transition-all font-bold text-xs"
+                                        >
+                                            Trade
                                         </button>
                                     </td>
                                 </motion.tr>

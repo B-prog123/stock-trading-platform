@@ -225,37 +225,7 @@ app.post("/api/auth/login", async (req, res) => {
   res.json({ token, user: { id: String(user._id), email: user.email, name: user.name, balance: user.balance, phone: user.phone || "" } });
 });
 
-// ── OTP Store (in-memory for dev; replace with Redis/DB in prod) ──────────────
-const phoneOtpStore = new Map<string, { otp: string; expiresAt: number }>();
 
-app.post("/api/auth/send-otp", async (req, res) => {
-  const { phone } = req.body;
-  if (!phone || !/^[6-9]\d{9}$/.test(String(phone))) {
-    return res.status(400).json({ error: "Enter a valid 10-digit Indian mobile number" });
-  }
-  // Generate 6-digit OTP
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
-  phoneOtpStore.set(phone, { otp, expiresAt });
-  console.log(`[OTP] Phone: ${phone} OTP: ${otp}`); // visible in server logs
-  // In production: send via SMS provider (e.g., MSG91, Twilio)
-  // For now we return it in dev mode so frontend can display it
-  res.json({ success: true, otp, message: "OTP sent successfully (dev mode)" });
-});
-
-app.post("/api/auth/verify-otp", async (req, res) => {
-  const { phone, otp } = req.body;
-  if (!phone || !otp) return res.status(400).json({ error: "Phone and OTP are required" });
-  const stored = phoneOtpStore.get(phone);
-  if (!stored) return res.status(400).json({ error: "No OTP sent to this number. Request a new one." });
-  if (Date.now() > stored.expiresAt) {
-    phoneOtpStore.delete(phone);
-    return res.status(400).json({ error: "OTP has expired. Please request a new one." });
-  }
-  if (stored.otp !== String(otp)) return res.status(400).json({ error: "Incorrect OTP. Please try again." });
-  phoneOtpStore.delete(phone); // One-time use
-  res.json({ success: true, message: "OTP verified successfully" });
-});
 
 
 
