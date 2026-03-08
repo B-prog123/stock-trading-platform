@@ -200,8 +200,6 @@ export default function App() {
     setToastNotifications([]);
   };
 
-  if (!isAuthReady) return null;
-
   const providerValue: AuthContextType = useMemo(() => ({
     user,
     token,
@@ -219,6 +217,8 @@ export default function App() {
     selectedSymbol,
     setSelectedSymbol,
   }), [user, token, theme, notifications, toastNotifications, activeTab, selectedSymbol, isAuthReady, showOnboarding, showTutorial, showAppBrief]);
+
+  if (!isAuthReady) return null;
 
   if (!token) {
     return (
