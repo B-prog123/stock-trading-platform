@@ -6,7 +6,7 @@ interface TradingViewWidgetProps {
   interval?: string;
 }
 
-function TradingViewWidget({ symbol, interval = 'D' }: TradingViewWidgetProps) {
+function TradingViewWidget({ symbol, interval = '1' }: TradingViewWidgetProps) {
   const container = useRef<HTMLDivElement>(null);
   const { theme } = useAuth();
 
@@ -34,7 +34,7 @@ function TradingViewWidget({ symbol, interval = 'D' }: TradingViewWidgetProps) {
       "autosize": true,
       "symbol": `BSE:${symbol}`,
       "interval": interval,
-      "timezone": "Etc/UTC",
+      "timezone": "Asia/Kolkata",
       "theme": theme || "dark",
       "style": "1",
       "locale": "en",
