@@ -145,7 +145,7 @@ export default function Market() {
       const res = await fetch(apiUrl('/api/trade'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ symbol: selectedStock.symbol, quantity, type }),
+        body: JSON.stringify({ symbol: selectedStock.symbol, quantity, price: selectedStock.price, type }),
       });
       const data = await res.json();
       if (res.ok) {
