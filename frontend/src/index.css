@@ -86,6 +86,97 @@
   .text-gradient {
     @apply text-[var(--text-primary)];
   }
+
+  /* --- Advanced Auth Background Animations & Utilities --- */
+
+  /* Glowing Interactive Spotlight */
+  .auth-spotlight {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle,
+        rgba(59, 130, 246, 0.15) 0%,
+        rgba(16, 185, 129, 0.1) 40%,
+        transparent 70%);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 10;
+    mix-blend-mode: soft-light;
+    transition: opacity 0.5s ease;
+  }
+
+  .dark .auth-spotlight {
+    background: radial-gradient(circle,
+        rgba(59, 130, 246, 0.25) 0%,
+        rgba(16, 185, 129, 0.15) 40%,
+        transparent 70%);
+    mix-blend-mode: screen;
+  }
+
+  /* GPU-Accelerated Dynamic Mesh Grid */
+  .auth-mesh-grid {
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background-image:
+      linear-gradient(rgba(59, 130, 246, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(59, 130, 246, 0.05) 1px, transparent 1px);
+    background-size: 60px 60px;
+    transform: perspective(1000px) rotateX(60deg) translateY(-100px) translateZ(-200px);
+    transform-origin: center top;
+    animation: gridMove 20s linear infinite;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .dark .auth-mesh-grid {
+    background-image:
+      linear-gradient(rgba(16, 185, 129, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(16, 185, 129, 0.05) 1px, transparent 1px);
+  }
+
+  @keyframes gridMove {
+    0% {
+      transform: perspective(1000px) rotateX(60deg) translateY(0) translateZ(-200px);
+    }
+
+    100% {
+      transform: perspective(1000px) rotateX(60deg) translateY(60px) translateZ(-200px);
+    }
+  }
+
+  /* Floating Orbs (using pure CSS translate3d to avoid layout thrashing) */
+  .auth-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    z-index: 0;
+    animation: orbFloat 25s ease-in-out infinite alternate;
+    pointer-events: none;
+  }
+
+  @keyframes orbFloat {
+    0% {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+
+    33% {
+      transform: translate3d(5vw, -10vh, 0) scale(1.1);
+    }
+
+    66% {
+      transform: translate3d(-10vw, 5vh, 0) scale(0.9);
+    }
+
+    100% {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+  }
 }
 
 body {

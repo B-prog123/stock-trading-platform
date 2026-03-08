@@ -1,4 +1,4 @@
-import React, { useState, useEffect, createContext, useContext } from 'react';
+import React, { useState, useEffect, createContext, useContext, useMemo } from 'react';
 import { User } from './types';
 import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
@@ -202,7 +202,7 @@ export default function App() {
 
   if (!isAuthReady) return null;
 
-  const providerValue: AuthContextType = {
+  const providerValue: AuthContextType = useMemo(() => ({
     user,
     token,
     login,
@@ -218,7 +218,7 @@ export default function App() {
     setActiveTab,
     selectedSymbol,
     setSelectedSymbol,
-  };
+  }), [user, token, theme, notifications, toastNotifications, activeTab, selectedSymbol, isAuthReady, showOnboarding, showTutorial, showAppBrief]);
 
   if (!token) {
     return (

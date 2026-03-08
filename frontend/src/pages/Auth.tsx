@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useAuth } from '../App';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -15,9 +15,26 @@ export default function Auth() {
   const { login } = useAuth();
 
   // State
+  const [isLogin, setIsLogin] = useState(true);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [phone, setPhone] = useState('');
+  const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
+
+  // Spotlight Position
+  const [mousePos, setMousePos] = useState({ x: -1000, y: -1000 });
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePos({ x: e.clientX, y: e.clientY });
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
 
   // ── handle Step 1 submit ────────────────────────────────────────────────────
   const handleDetailsSubmit = async (e: React.FormEvent) => {
@@ -56,8 +73,6 @@ export default function Auth() {
       });
       const data = await res.json();
       if (!res.ok) { setError(data?.error || 'Failed to send OTP'); return; }
-      setDevOtp(data.otp || '');
-      setStep('otp');
     } catch { setError('Network error. Please try again.'); }
     finally { setLoading(false); }
   };
@@ -75,100 +90,32 @@ export default function Auth() {
 
 
   return (
-    <div className="min-h-screen bg-white text-[var(--text-primary)] flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background: Premium Multi-Layered Animation */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-        {/* Light Overlay - Let texture through on white bg */}
-        <div className="absolute inset-0 bg-white/80 z-[1]" />
+    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] flex items-center justify-center p-4 relative overflow-hidden transition-colors duration-500">
 
-        {/* Layer 1: Ambient Mesh Grid - Intensified opacity */}
-        <motion.div
-          className="absolute inset-0 opacity-[0.08]"
+      {/* --- Advanced GPU-Accelerated Background --- */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+
+        {/* Base Gradient Overlay for depth */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[var(--bg-primary)]/80 to-[var(--bg-primary)] z-[2]" />
+
+        {/* 1. Dynamic 3D Isometric Mesh Grid */}
+        <div className="auth-mesh-grid opacity-30 dark:opacity-20" />
+
+        {/* 2. Interactive Mouse Spotlight */}
+        <div
+          className="auth-spotlight"
           style={{
-            backgroundImage: `radial-gradient(circle at 2px 2px, rgba(16, 185, 129, 0.4) 1px, transparent 0)`,
-            backgroundSize: '40px 40px'
+            left: `${mousePos.x}px`,
+            top: `${mousePos.y}px`,
+            opacity: mousePos.x === -1000 ? 0 : 1
           }}
-          animate={{
-            x: [0, -20, 0],
-            y: [0, -20, 0]
-          }}
-          transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
         />
 
-        {/* Layer 2: Growth Moving Bars - Light theme */}
-        <div className="absolute bottom-0 left-0 right-0 h-[400px] flex items-end justify-around px-1 opacity-[0.12] pointer-events-none">
-          {[...Array(15)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="flex-1 mx-[1px] bg-gradient-to-t from-emerald-200 via-blue-100/40 to-transparent rounded-t-full"
-              initial={{ height: 0 }}
-              animate={{
-                height: [
-                  (20 + Math.random() * 50) + "%",
-                  (65 + Math.random() * 35) + "%",
-                  (30 + Math.random() * 30) + "%"
-                ],
-                opacity: [0.4, 0.8, 0.4]
-              }}
-              transition={{
-                duration: 3 + Math.random() * 4,
-                repeat: Infinity,
-                repeatType: "reverse",
-                delay: i * 0.08,
-                ease: "easeInOut"
-              }}
-            />
-          ))}
-        </div>
+        {/* 3. Floating Ambient CSS Orbs (No layout thrashing) */}
+        <div className="auth-orb w-[600px] h-[600px] bg-blue-500/10 dark:bg-blue-600/20 top-[-20%] left-[-10%]" style={{ animationDelay: '0s' }} />
+        <div className="auth-orb w-[500px] h-[500px] bg-emerald-500/10 dark:bg-emerald-600/20 bottom-[-10%] right-[-10%]" style={{ animationDelay: '-12s' }} />
+        <div className="auth-orb w-[400px] h-[400px] bg-indigo-500/10 dark:bg-indigo-600/20 top-[40%] left-[30%]" style={{ animationDelay: '-5s' }} />
 
-        {/* Layer 3: Dynamic Price Action Line - Light theme */}
-        <motion.svg className="absolute inset-x-0 bottom-[20%] w-full h-[300px] opacity-[0.15]" viewBox="0 0 1200 300" preserveAspectRatio="none">
-          <motion.path
-            d="M0 250 L100 220 L200 240 L300 180 L400 210 L500 150 L600 170 L700 120 L800 140 L900 80 L1000 100 L1100 50 L1200 70"
-            fill="none"
-            stroke="url(#lineGradLight)"
-            strokeWidth="4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            animate={{
-              d: [
-                "M0 250 L100 220 L200 240 L300 180 L400 210 L500 150 L600 170 L700 120 L800 140 L900 80 L1000 100 L1100 50 L1200 70",
-                "M0 240 L100 230 L200 220 L300 190 L400 200 L500 160 L600 155 L700 130 L800 125 L900 90 L1000 85 L1100 60 L1200 55",
-                "M0 250 L100 220 L200 240 L300 180 L400 210 L500 150 L600 170 L700 120 L800 140 L900 80 L1000 100 L1100 50 L1200 70"
-              ]
-            }}
-            transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
-          />
-          <defs>
-            <linearGradient id="lineGradLight" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#3b82f6" />
-              <stop offset="100%" stopColor="#10b981" />
-            </linearGradient>
-          </defs>
-        </motion.svg>
-
-        {/* Layer 4: Floating Particles - Lowered and blue-tinted */}
-        {[...Array(10)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-1 h-1 bg-blue-400/20 rounded-full"
-            initial={{
-              x: Math.random() * 1200,
-              y: Math.random() * 800,
-              opacity: Math.random() * 0.4
-            }}
-            animate={{
-              y: [null, Math.random() * 800 - 400],
-              x: [null, Math.random() * 1200 - 600],
-              opacity: [0.1, 0.4, 0.1]
-            }}
-            transition={{
-              duration: 15 + Math.random() * 20,
-              repeat: Infinity,
-              ease: "linear"
-            }}
-          />
-        ))}
       </div>
 
       {/* Ticker - Light theme */}
