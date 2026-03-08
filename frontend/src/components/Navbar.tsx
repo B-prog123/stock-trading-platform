@@ -31,6 +31,7 @@ export default function Navbar() {
     { id: 'portfolio', label: 'Portfolio' },
     { id: 'watchlist', label: 'Watchlist' },
     { id: 'market', label: 'Market' },
+    { id: 'screener', label: 'Screener' },
     { id: 'sip', label: 'SIPs' },
     { id: 'market-news', label: 'News' },
     { id: 'transactions', label: 'Orders' },
