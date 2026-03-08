@@ -8,6 +8,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import mongoose, { Schema, Types } from "mongoose";
 import { GoogleGenAI } from "@google/genai";
+import { MongoMemoryServer } from "mongodb-memory-server";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -22,10 +23,11 @@ const JWT_SECRET = process.env.JWT_SECRET || "stockify-secret-key";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 const gemini = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : null;
 
+let isUsingMemoryDB = false;
 if (!MONGODB_URI || MONGODB_URI.includes("<username>") || MONGODB_URI.includes("<password>")) {
-  console.error("Error: MONGODB_URI is missing or contains placeholder values (<username>, <password>).");
-  console.error("Please update your .env file with a valid MongoDB connection string.");
-  process.exit(1);
+  console.warn("⚠️  MONGODB_URI is missing or contains placeholder values.");
+  console.warn("⚠️  Starting in-memory MongoDB database for fallback operations.");
+  isUsingMemoryDB = true;
 }
 
 const normalizeOrigin = (value: string) => value.trim().replace(/\/$/, "");
@@ -499,9 +501,17 @@ app.post("/api/ai/chat", authenticateToken, async (req: any, res) => {
 });
 
 async function startServer() {
-  await mongoose.connect(MONGODB_URI);
+  let finalUri = MONGODB_URI;
+  if (isUsingMemoryDB) {
+    const mongoServer = await MongoMemoryServer.create();
+    finalUri = mongoServer.getUri();
+  }
+
+  await mongoose.connect(finalUri);
+  console.log(`✅ Connected to ${isUsingMemoryDB ? 'in-memory ' : ''}MongoDB database successfully.`);
+
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`API server running on http://localhost:${PORT}`);
+    console.log(`🚀 API server running on http://localhost:${PORT}`);
   });
   await processDueSips();
   setInterval(() => processDueSips(), 60 * 1000);
