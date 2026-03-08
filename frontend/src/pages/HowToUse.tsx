@@ -11,6 +11,8 @@ import {
   Info,
   MousePointer2,
   Clock3,
+  Youtube,
+  PlayCircle,
 } from 'lucide-react';
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
@@ -52,6 +54,29 @@ export default function HowToUse() {
         <p className="text-sm text-[var(--text-secondary)] max-w-2xl">
           Trading is not purely intuition; it requires reading the data. Learn the core principles of market analysis to maximize your returns using Stockify's tools.
         </p>
+      </section>
+
+      {/* Video Tutorial Section */}
+      <section className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-6 md:p-8 overflow-hidden relative shadow-lg">
+        <h3 className="text-2xl font-bold mb-4 flex items-center gap-3 text-[var(--text-primary)]">
+          <Youtube className="text-rose-500" size={28} />
+          Mastering Stockify
+        </h3>
+        <p className="text-sm text-[var(--text-secondary)] mb-6 max-w-3xl">
+          Watch our comprehensive video guide below to understand how to leverage Stockify's advanced tools, AI insights, and systematic investment planning (SIP) to maximize your portfolio growth.
+        </p>
+        <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-[#0A0A0A] border border-[var(--border-color)] shadow-2xl flex items-center justify-center group">
+          <iframe
+            width="100%"
+            height="100%"
+            src="https://www.youtube.com/embed/p7HKvqRI_Bo?rel=0&showinfo=0&modestbranding=1"
+            title="Stock Market Trading Course"
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            className="absolute inset-0 z-10"
+          ></iframe>
+        </div>
       </section>
 
       {/* Chart Reading Guide */}

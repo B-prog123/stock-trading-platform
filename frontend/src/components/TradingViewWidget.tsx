@@ -34,10 +34,10 @@ function TradingViewWidget({ symbol, interval = 'D' }: TradingViewWidgetProps) {
       script.type = "text/javascript";
       script.async = true;
       script.crossOrigin = "anonymous";
-      
+
       const config = {
         "autosize": true,
-        "symbol": `NASDAQ:${symbol}`,
+        "symbol": `BSE:${symbol}`,
         "interval": interval,
         "timezone": "Etc/UTC",
         "theme": theme || "dark",
@@ -55,7 +55,7 @@ function TradingViewWidget({ symbol, interval = 'D' }: TradingViewWidgetProps) {
         "popup_height": "650",
         "support_host": "https://www.tradingview.com"
       };
-      
+
       script.innerHTML = JSON.stringify(config);
       currentContainer.appendChild(script);
     }, 100);
@@ -70,9 +70,9 @@ function TradingViewWidget({ symbol, interval = 'D' }: TradingViewWidgetProps) {
   }, [symbol, theme]);
 
   return (
-    <div 
-      className="tradingview-widget-container" 
-      ref={container} 
+    <div
+      className="tradingview-widget-container"
+      ref={container}
       style={{ height: "100%", width: "100%", position: 'relative' }}
     >
       {/* The widget and script will be injected here by the useEffect */}
