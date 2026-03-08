@@ -1,5 +1,5 @@
-import React from 'react';
-import { motion } from 'motion/react';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   BookOpen,
   LineChart,
@@ -13,6 +13,14 @@ import {
   Clock3,
   Youtube,
   PlayCircle,
+  PiggyBank,
+  Briefcase,
+  Search,
+  MessageSquare,
+  ShieldCheck,
+  Zap,
+  TestTube2,
+  Bookmark
 } from 'lucide-react';
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
@@ -25,7 +33,6 @@ const candleData = [
   { time: '15:00', open: 159, close: 164, high: 166, low: 158 },
 ];
 
-// Transform for Recharts ComposedChart (Candlestick hack)
 const chartData = candleData.map((d) => ({
   ...d,
   bodyMin: Math.min(d.open, d.close),
@@ -36,36 +43,41 @@ const chartData = candleData.map((d) => ({
 }));
 
 export default function HowToUse() {
+  const [activeTab, setActiveTab] = useState<'basics' | 'features'>('basics');
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="space-y-8 pb-10"
+      className="space-y-8 pb-10 max-w-7xl mx-auto"
     >
-      <section className="rounded-2xl p-6 md:p-8 bg-gradient-to-br from-indigo-500/10 via-emerald-500/5 to-[var(--bg-secondary)] border border-[var(--border-color)]">
-        <div className="flex items-center gap-3 text-indigo-400 mb-2">
-          <BookOpen size={24} />
-          <span className="text-xs font-bold uppercase tracking-widest">Education Center</span>
+      <section className="rounded-3xl p-8 md:p-10 bg-gradient-to-br from-indigo-500/10 via-emerald-500/5 to-[var(--bg-secondary)] border border-[var(--border-color)] relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+        <div className="flex items-center gap-3 text-indigo-400 mb-4 relative z-10">
+          <BookOpen size={28} />
+          <span className="text-sm font-bold uppercase tracking-widest">Education Center</span>
         </div>
-        <h2 className="text-3xl font-bold text-[var(--text-primary)] mb-2">
-          Stockify Academy
+        <h2 className="text-4xl md:text-5xl font-black text-[var(--text-primary)] mb-4 relative z-10 tracking-tight">
+          Stockify <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-emerald-500">Academy</span>
         </h2>
-        <p className="text-sm text-[var(--text-secondary)] max-w-2xl">
-          Trading is not purely intuition; it requires reading the data. Learn the core principles of market analysis to maximize your returns using Stockify's tools.
+        <p className="text-base md:text-lg text-[var(--text-secondary)] max-w-2xl relative z-10">
+          Welcome to the ultimate playground for future market wizards. Forget boring textbooks; we're going to learn trading through fun experiments, real-world examples, and cutting-edge AI.
         </p>
       </section>
 
-      {/* Video Tutorial Section */}
-      <section className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-6 md:p-8 overflow-hidden relative shadow-lg">
-        <h3 className="text-2xl font-bold mb-4 flex items-center gap-3 text-[var(--text-primary)]">
+      {/* Video Tutorial Section - Made smaller and centered */}
+      <section className="rounded-3xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-6 md:p-8 relative shadow-lg flex flex-col items-center text-center">
+        <h3 className="text-2xl font-bold mb-3 flex items-center gap-3 text-[var(--text-primary)]">
           <Youtube className="text-rose-500" size={28} />
           Mastering Stockify
         </h3>
-        <p className="text-sm text-[var(--text-secondary)] mb-6 max-w-3xl">
-          Watch our comprehensive video guide below to understand how to leverage Stockify's advanced tools, AI insights, and systematic investment planning (SIP) to maximize your portfolio growth.
+        <p className="text-sm text-[var(--text-secondary)] mb-8 max-w-2xl">
+          Start here! Watch our quick video guide to see how the platform works. We keep it short and snappy so you can get back to making money.
         </p>
-        <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-[#0A0A0A] border border-[var(--border-color)] shadow-2xl flex items-center justify-center group">
+
+        {/* Shorter, narrower video frame for better visibility */}
+        <div className="relative w-full max-w-3xl aspect-video rounded-2xl overflow-hidden bg-[#0A0A0A] border-4 border-[var(--bg-primary)] shadow-[0_20px_50px_rgba(0,0,0,0.3)] group hover:shadow-[0_20px_50px_rgba(16,185,129,0.15)] transition-shadow duration-500">
           <iframe
             width="100%"
             height="100%"
@@ -79,111 +91,194 @@ export default function HowToUse() {
         </div>
       </section>
 
-      {/* Chart Reading Guide */}
-      <section className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+      {/* Tabs for Navigation */}
+      <div className="flex p-1.5 rounded-2xl bg-[var(--bg-secondary)] border border-[var(--border-color)] w-max mx-auto shadow-sm">
+        <button
+          onClick={() => setActiveTab('basics')}
+          className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'basics' ? 'bg-blue-600 text-white shadow-md' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+        >
+          🧪 Fun Trading Basics
+        </button>
+        <button
+          onClick={() => setActiveTab('features')}
+          className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'features' ? 'bg-emerald-600 text-white shadow-md' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+        >
+          🚀 Stockify Features
+        </button>
+      </div>
 
-        <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-6">
-          <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-[var(--text-primary)]">
-            <CandlestickChart className="text-emerald-400" size={20} />
-            Reading Price Action
-          </h3>
-          <p className="text-sm text-[var(--text-secondary)] mb-6">
-            The candlestick chart is the trader's most vital tool. A green (bullish) candle means the price closed higher than it opened. A red (bearish) candle means the opposite.
-          </p>
+      <AnimatePresence mode="wait">
+        {activeTab === 'basics' ? (
+          <motion.div key="basics" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-6">
 
-          <div className="h-64 border border-[var(--border-color)] bg-[var(--bg-primary)] rounded-xl p-4 relative">
-            <div className="absolute top-2 left-4 text-xs font-bold text-[var(--text-secondary)]">EXAMPLE CHART</div>
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={chartData} margin={{ top: 20, right: 0, bottom: 0, left: -20 }}>
-                <CartesianGrid strokeDasharray="3 3" opacity={0.05} vertical={false} />
-                <XAxis dataKey="time" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--text-secondary)' }} />
-                <YAxis domain={['dataMin - 2', 'dataMax + 2']} axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--text-secondary)' }} />
-                <Tooltip contentStyle={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }} itemStyle={{ fontSize: 12 }} />
-
-                {/* Wicks */}
-                <Bar dataKey="high" barSize={2} fillOpacity={0}>
-                  {chartData.map((entry, index) => (
-                    <Cell key={`wick-${index}`} fill={entry.isBullish ? '#10b981' : '#f43f5e'} />
-                  ))}
-                </Bar>
-                {/* Bodies */}
-                <Bar dataKey="bodyMax" barSize={16}>
-                  {chartData.map((entry, index) => (
-                    <Cell key={`body-${index}`} fill={entry.isBullish ? '#10b981' : '#f43f5e'} />
-                  ))}
-                </Bar>
-                <Line type="monotone" dataKey="trendLine" stroke="#8b5cf6" strokeWidth={2} dot={false} strokeDasharray="3 3" name="Moving Average" />
-              </ComposedChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="space-y-6">
-
-          <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-6">
-            <h3 className="text-lg font-bold mb-3 flex items-center gap-2 text-[var(--text-primary)]">
-              <Brain className="text-indigo-400" size={18} />
-              Platform AI Insights
-            </h3>
-            <p className="text-sm text-[var(--text-secondary)] mb-4">Stockify analyzes news sentiment and market momentum to label assets:</p>
-            <div className="flex gap-4">
-              <div className="flex-1 border border-emerald-500/20 bg-emerald-500/5 rounded-xl p-3 text-center">
-                <span className="block text-emerald-500 font-bold mb-1">BUY</span>
-                <span className="text-xs text-[var(--text-secondary)]">Strong upward momentum</span>
+            {/* The Pizza Slice Experiment */}
+            <div className="rounded-3xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-6 md:p-8 overflow-hidden relative">
+              <div className="absolute right-0 top-0 w-32 h-32 bg-amber-500/5 rounded-bl-full" />
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-3 bg-amber-500/10 text-amber-500 rounded-2xl"><TestTube2 size={24} /></div>
+                <h3 className="text-2xl font-bold text-[var(--text-primary)]">The Pizza Slice Experiment (What is a Stock?)</h3>
               </div>
-              <div className="flex-1 border border-rose-500/20 bg-rose-500/5 rounded-xl p-3 text-center">
-                <span className="block text-rose-500 font-bold mb-1">SELL</span>
-                <span className="text-xs text-[var(--text-secondary)]">Downward trend detected</span>
-              </div>
-              <div className="flex-1 border border-yellow-500/20 bg-yellow-500/5 rounded-xl p-3 text-center">
-                <span className="block text-yellow-500 font-bold mb-1">HOLD</span>
-                <span className="text-xs text-[var(--text-secondary)]">Consolidating price action</span>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center mt-6">
+                <div className="space-y-4">
+                  <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+                    Imagine your friend opens the best pizza shop in town. It becomes super popular, but they need money to build a second shop. Instead of taking a loan, they slice the "ownership" of the shop into 100 equal pieces.
+                  </p>
+                  <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+                    <strong>These pieces are "Stocks."</strong> If you buy 10 slices, you own 10% of the company! As the pizza shop makes more profit, the value of your slices goes up. But if people stop liking the pizza, the value goes down.
+                  </p>
+                  <div className="bg-[var(--bg-primary)] border border-[var(--border-color)] p-4 rounded-xl">
+                    <h4 className="font-bold text-sm text-[var(--text-primary)] mb-2">Rule of Thumb:</h4>
+                    <ul className="text-xs text-[var(--text-muted)] space-y-2 list-disc pl-4">
+                      <li>You buy stocks when you believe a company will grow.</li>
+                      <li>You sell stocks when you think the growth is over (or you just want your profits!).</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="bg-[var(--bg-primary)] p-6 rounded-2xl border border-[var(--border-color)] flex flex-col items-center justify-center min-h-[250px] shadow-inner">
+                  <div className="text-6xl mb-4">🍕</div>
+                  <div className="flex gap-2 mb-2">
+                    <span className="w-8 h-8 rounded bg-emerald-500/20 text-emerald-500 flex flex-col items-center justify-center font-bold text-xs">$10</span>
+                    <span className="w-8 h-8 rounded bg-emerald-500/20 text-emerald-500 flex flex-col items-center justify-center font-bold text-xs">$10</span>
+                    <span className="w-8 h-8 rounded bg-emerald-500/20 text-emerald-500 flex flex-col items-center justify-center font-bold text-xs">$10</span>
+                  </div>
+                  <p className="text-xs text-[var(--text-muted)] mt-4">Buying shares is like buying slices of a profitable business.</p>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-6">
-            <h3 className="text-lg font-bold mb-3 flex items-center gap-2 text-[var(--text-primary)]">
-              <TrendingUp className="text-cyan-400" size={18} />
-              Systematic Investing (SIP)
-            </h3>
-            <p className="text-sm text-[var(--text-secondary)] mb-4">
-              Don't try to time the market. A SIP (Systematic Investment Plan) allows you to automate your investments weekly or monthly. This averages out your buy price over time, minimizing risk.
-            </p>
-            <ul className="text-xs text-[var(--text-secondary)] space-y-2 list-disc pl-4">
-              <li>Navigate to the **SIPs** tab in the top navigation.</li>
-              <li>Pick a safe "Bluechip" stock idea or enter your own symbol.</li>
-              <li>Set a recurring amount (e.g., $500 monthly) to passively grow your wealth.</li>
-            </ul>
-          </div>
+            {/* Reading the Charts */}
+            <div className="rounded-3xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-6 md:p-8">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-3 bg-emerald-500/10 text-emerald-500 rounded-2xl"><CandlestickChart size={24} /></div>
+                <h3 className="text-2xl font-bold text-[var(--text-primary)]">Candlesticks: The Heartbeat of the Market</h3>
+              </div>
 
-        </div>
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                <div>
+                  <p className="text-sm text-[var(--text-secondary)] mb-4 leading-relaxed">
+                    Look at the chart below. Those red and green bars aren't just random decorations—they are fighting matches between <strong>Bulls (Buyers)</strong> and <strong>Bears (Sellers)</strong>!
+                  </p>
+                  <div className="space-y-3 mb-6">
+                    <div className="flex items-start gap-3 bg-[var(--bg-primary)] p-3 rounded-xl border border-[var(--border-color)]">
+                      <TrendingUp className="text-emerald-500 shrink-0" />
+                      <div>
+                        <p className="text-sm font-bold text-emerald-500">Green Candles (Bulls Win)</p>
+                        <p className="text-xs text-[var(--text-muted)]">Price closed higher than it opened. Buyers were aggressive and pushed the price up.</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3 bg-[var(--bg-primary)] p-3 rounded-xl border border-[var(--border-color)]">
+                      <TrendingDown className="text-rose-500 shrink-0" />
+                      <div>
+                        <p className="text-sm font-bold text-rose-500">Red Candles (Bears Win)</p>
+                        <p className="text-xs text-[var(--text-muted)]">Price closed lower than it opened. Sellers panicked and drove the price down.</p>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-xs font-bold text-indigo-400 bg-indigo-500/10 p-3 rounded-lg border border-indigo-500/20">
+                    💡 Pro Tip: The thin lines sticking out of the candles are called "Wicks". They show the highest and lowest points the price reached during that hour!
+                  </p>
+                </div>
 
-      </section>
+                <div className="h-72 border border-[var(--border-color)] bg-[var(--bg-primary)] rounded-2xl p-4 relative shadow-inner">
+                  <div className="absolute top-4 left-4 text-xs font-bold text-[var(--text-secondary)] tracking-wider">LIVE BATTLE (BULLS VS BEARS)</div>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart data={chartData} margin={{ top: 30, right: 10, bottom: 5, left: -20 }}>
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.05} vertical={false} />
+                      <XAxis dataKey="time" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--text-secondary)' }} />
+                      <YAxis domain={['dataMin - 2', 'dataMax + 2']} axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--text-secondary)' }} />
+                      <Tooltip contentStyle={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)', borderRadius: '8px' }} itemStyle={{ fontSize: 12 }} />
 
-      <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-5 flex items-start gap-4">
-          <div className="p-2 bg-[var(--bg-primary)] rounded-lg text-emerald-400 shrink-0"><Activity size={20} /></div>
-          <div>
-            <h4 className="font-bold text-sm text-[var(--text-primary)] mb-1">Portfolio P&L</h4>
-            <p className="text-xs text-[var(--text-secondary)]">Check your global P&L daily from the Portfolio tab to see your net ROI.</p>
-          </div>
-        </div>
-        <div className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-5 flex items-start gap-4">
-          <div className="p-2 bg-[var(--bg-primary)] rounded-lg text-blue-400 shrink-0"><Clock3 size={20} /></div>
-          <div>
-            <h4 className="font-bold text-sm text-[var(--text-primary)] mb-1">Timeframes</h4>
-            <p className="text-xs text-[var(--text-secondary)]">Use 1W or 1M chart timeframes for long term investing, and 1D for day trading.</p>
-          </div>
-        </div>
-        <div className="rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-5 flex items-start gap-4">
-          <div className="p-2 bg-[var(--bg-primary)] rounded-lg text-indigo-400 shrink-0"><LineChart size={20} /></div>
-          <div>
-            <h4 className="font-bold text-sm text-[var(--text-primary)] mb-1">Market Indices</h4>
-            <p className="text-xs text-[var(--text-secondary)]">Watch NIFTY 50 and SENSEX to gauge the overall health of the market.</p>
-          </div>
-        </div>
-      </section>
+                      {/* Wicks */}
+                      <Bar dataKey="high" barSize={2} fillOpacity={0}>
+                        {chartData.map((entry, index) => (
+                          <Cell key={`wick-${index}`} fill={entry.isBullish ? '#10b981' : '#f43f5e'} />
+                        ))}
+                      </Bar>
+                      {/* Bodies */}
+                      <Bar dataKey="bodyMax" barSize={16}>
+                        {chartData.map((entry, index) => (
+                          <Cell key={`body-${index}`} fill={entry.isBullish ? '#10b981' : '#f43f5e'} />
+                        ))}
+                      </Bar>
+                      <Line type="monotone" dataKey="trendLine" stroke="#8b5cf6" strokeWidth={3} dot={{ stroke: '#8b5cf6', fill: 'var(--bg-primary)', r: 4 }} name="Moving Average" />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+
+          </motion.div>
+        ) : (
+          <motion.div key="features" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-6">
+
+            <div className="text-center max-w-2xl mx-auto mb-8">
+              <h3 className="text-2xl font-bold text-[var(--text-primary)] mb-2">Unleash the Platform</h3>
+              <p className="text-sm text-[var(--text-secondary)]">Stockify isn't just a trading app; it's your personal hedge fund manager. Here is how to use every tool at your disposal.</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+              {/* Feature Cards */}
+              <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] p-6 rounded-3xl hover:border-blue-500/30 transition-colors group">
+                <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <Activity size={24} />
+                </div>
+                <h4 className="text-lg font-bold text-[var(--text-primary)] mb-2">Market Watch</h4>
+                <p className="text-sm text-[var(--text-secondary)] mb-4">The command center. View real-time prices, toggle between Simple and Advanced (TradingView) charts, and execute your BUY/SELL orders instantly.</p>
+                <div className="text-xs font-bold text-blue-500 bg-blue-500/10 px-3 py-1.5 rounded-lg inline-block">Use it to: Execute trades</div>
+              </div>
+
+              <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] p-6 rounded-3xl hover:border-purple-500/30 transition-colors group">
+                <div className="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <Bookmark size={24} />
+                </div>
+                <h4 className="text-lg font-bold text-[var(--text-primary)] mb-2">Watchlist</h4>
+                <p className="text-sm text-[var(--text-secondary)] mb-4">Don't want to buy yet? Click the Bookmark icon on any stock to add it here. Keep your eyes on the tigers before you jump in.</p>
+                <div className="text-xs font-bold text-purple-500 bg-purple-500/10 px-3 py-1.5 rounded-lg inline-block">Use it to: Stalk opportunities</div>
+              </div>
+
+              <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] p-6 rounded-3xl hover:border-emerald-500/30 transition-colors group">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <Briefcase size={24} />
+                </div>
+                <h4 className="text-lg font-bold text-[var(--text-primary)] mb-2">Portfolio</h4>
+                <p className="text-sm text-[var(--text-secondary)] mb-4">Your treasure chest. View all the stocks you currently own, your average buying price, and track your overall Profit & Loss (P&L) in real-time.</p>
+                <div className="text-xs font-bold text-emerald-500 bg-emerald-500/10 px-3 py-1.5 rounded-lg inline-block">Use it to: Track your wealth</div>
+              </div>
+
+              <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] p-6 rounded-3xl hover:border-amber-500/30 transition-colors group">
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <PiggyBank size={24} />
+                </div>
+                <h4 className="text-lg font-bold text-[var(--text-primary)] mb-2">SIPs (Auto-Pilot)</h4>
+                <p className="text-sm text-[var(--text-secondary)] mb-4">Systematic Investment Planning. Tell Stockify to automatically buy $100 of Reliance every month. It averages out the price and minimizes risk.</p>
+                <div className="text-xs font-bold text-amber-500 bg-amber-500/10 px-3 py-1.5 rounded-lg inline-block">Use it to: Sleep peacefully</div>
+              </div>
+
+              <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] p-6 rounded-3xl hover:border-rose-500/30 transition-colors group">
+                <div className="w-12 h-12 rounded-2xl bg-rose-500/10 text-rose-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <Brain size={24} />
+                </div>
+                <h4 className="text-lg font-bold text-[var(--text-primary)] mb-2">AI Chatbot</h4>
+                <p className="text-sm text-[var(--text-secondary)] mb-4">Located at the bottom right of your screen. Ask it anything from "What is RSI?" to "Explain a Golden Cross." Powered by Gemini 2.0.</p>
+                <div className="text-xs font-bold text-rose-500 bg-rose-500/10 px-3 py-1.5 rounded-lg inline-block">Use it to: Learn constantly</div>
+              </div>
+
+              <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] p-6 rounded-3xl hover:border-cyan-500/30 transition-colors group">
+                <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 text-cyan-500 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <ShieldCheck size={24} />
+                </div>
+                <h4 className="text-lg font-bold text-[var(--text-primary)] mb-2">Funds & Orders</h4>
+                <p className="text-sm text-[var(--text-secondary)] mb-4">Manage your wallet balance in the Funds tab, and review your entire receipt history in the Orders/Transactions tab for tax and tracking.</p>
+                <div className="text-xs font-bold text-cyan-500 bg-cyan-500/10 px-3 py-1.5 rounded-lg inline-block">Use it to: Audit your history</div>
+              </div>
+
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </motion.div>
   );

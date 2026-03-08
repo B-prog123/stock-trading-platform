@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, LineChart, Briefcase, Bookmark, History, Newspaper, BookOpen, Wallet, Repeat2 } from 'lucide-react';
+import { LayoutDashboard, LineChart, Briefcase, Bookmark, History, Newspaper, BookOpen, Wallet, Repeat2, Activity } from 'lucide-react';
 
 interface MobileNavProps {
   activeTab: string;
@@ -10,6 +10,7 @@ export default function MobileNav({ activeTab, setActiveTab }: MobileNavProps) {
   const menuItems = [
     { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
     { id: 'market', label: 'Market', icon: LineChart },
+    { id: 'screener', label: 'Screen', icon: Activity },
     { id: 'funds', label: 'Funds', icon: Wallet },
     { id: 'sip', label: 'SIP', icon: Repeat2 },
     { id: 'portfolio', label: 'Portfolio', icon: Briefcase },

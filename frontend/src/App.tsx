@@ -11,6 +11,7 @@ import ProfileSettings from './pages/ProfileSettings';
 import Preferences from './pages/Preferences';
 import MarketNewsPage from './pages/MarketNewsPage';
 import HowToUse from './pages/HowToUse';
+import Screener from './pages/Screener';
 import Funds from './pages/Funds';
 import SIP from './pages/SIP';
 import Watchlist from './pages/Watchlist';
@@ -292,6 +293,7 @@ export default function App() {
                 {activeTab === 'dashboard' && <Dashboard />}
                 {activeTab === 'guide' && <HowToUse />}
                 {activeTab === 'market' && <Market />}
+                {activeTab === 'screener' && <Screener />}
                 {activeTab === 'market-news' && <MarketNewsPage />}
                 {activeTab === 'funds' && <Funds />}
                 {activeTab === 'sip' && <SIP />}

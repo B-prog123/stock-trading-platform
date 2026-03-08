@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, LineChart, Briefcase, Bookmark, Wallet, History, Newspaper, BookOpen, Repeat2, X } from 'lucide-react';
+import { LayoutDashboard, LineChart, Briefcase, Bookmark, Wallet, History, Newspaper, BookOpen, Repeat2, X, Activity } from 'lucide-react';
 import { useAuth } from '../App';
 import { motion } from 'motion/react';
 
@@ -17,6 +17,7 @@ export default function Sidebar({ activeTab, setActiveTab, isMobile = false, onC
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'guide', label: 'Guide', icon: BookOpen },
     { id: 'market', label: 'Market', icon: LineChart },
+    { id: 'screener', label: 'Screener', icon: Activity },
     { id: 'market-news', label: 'Market News', icon: Newspaper },
     { id: 'funds', label: 'Add Funds', icon: Wallet },
     { id: 'sip', label: 'SIP', icon: Repeat2 },
@@ -60,8 +61,8 @@ export default function Sidebar({ activeTab, setActiveTab, isMobile = false, onC
               if (onClose) onClose();
             }}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === item.id
-                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                : 'text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] hover:text-[var(--text-primary)]'
+              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+              : 'text-[var(--text-secondary)] hover:bg-[var(--bg-primary)] hover:text-[var(--text-primary)]'
               }`}
           >
             <item.icon size={20} />
