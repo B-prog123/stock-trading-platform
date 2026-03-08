@@ -22,8 +22,9 @@ const JWT_SECRET = process.env.JWT_SECRET || "stockify-secret-key";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 const gemini = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : null;
 
-if (!MONGODB_URI) {
-  console.error("Missing MONGODB_URI");
+if (!MONGODB_URI || MONGODB_URI.includes("<username>") || MONGODB_URI.includes("<password>")) {
+  console.error("Error: MONGODB_URI is missing or contains placeholder values (<username>, <password>).");
+  console.error("Please update your .env file with a valid MongoDB connection string.");
   process.exit(1);
 }
 
