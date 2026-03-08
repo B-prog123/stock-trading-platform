@@ -19,7 +19,6 @@ export default function Auth() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [phone, setPhone] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -58,18 +57,13 @@ export default function Auth() {
       return;
     }
 
-    // Registration: validate phone then send OTP
-    if (!/^[6-9]\d{9}$/.test(phone)) {
-      setError('Enter a valid 10-digit Indian mobile number');
-      return;
-    }
-
+    // Registration: validate and register directly
     setLoading(true);
     try {
-      const res = await fetch(apiUrl('/api/auth/send-otp'), {
+      const res = await fetch(apiUrl('/api/auth/register'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone }),
+        body: JSON.stringify({ name, email, password }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data?.error || 'Failed to send OTP'); return; }
@@ -90,13 +84,13 @@ export default function Auth() {
 
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] flex items-center justify-center p-4 relative overflow-hidden transition-colors duration-500">
+    <div className="min-h-screen bg-white text-slate-900 flex items-center justify-center p-4 relative overflow-hidden transition-colors duration-500">
 
       {/* --- Advanced GPU-Accelerated Background --- */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-[0]">
 
         {/* Base Gradient Overlay for depth */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[var(--bg-primary)]/80 to-[var(--bg-primary)] z-[2]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/80 to-white z-[2]" />
 
         {/* 1. Dynamic 3D Isometric Mesh Grid */}
         <div className="auth-mesh-grid opacity-30 dark:opacity-20" />
@@ -131,7 +125,7 @@ export default function Auth() {
       {/* Card */}
       <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
         className="relative w-full max-w-md z-10 mt-8">
-        <div className="bg-[var(--bg-secondary)] rounded-3xl shadow-[0_32px_80px_rgba(0,0,0,0.4)] border border-[var(--border-color)] overflow-hidden">
+        <div className="bg-white rounded-3xl shadow-[0_32px_80px_rgba(0,0,0,0.12)] border border-slate-200 overflow-hidden">
 
           {/* Header */}
           <div className="px-8 pt-8 pb-5">
@@ -147,10 +141,10 @@ export default function Auth() {
             </div>
 
             <motion.div key="title-details" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}>
-              <h2 className="text-xl font-bold text-[var(--text-primary)]">
+              <h2 className="text-xl font-bold text-slate-900">
                 {isLogin ? 'Sign in to your account' : 'Create your account'}
               </h2>
-              <p className="text-xs text-[var(--text-muted)] mt-1">
+              <p className="text-xs text-slate-500 mt-1">
                 {isLogin ? 'Enter your credentials to continue trading' : 'Fill in your details to get started'}
               </p>
             </motion.div>
@@ -229,8 +223,8 @@ export default function Auth() {
           </div>
 
           {/* Footer */}
-          <div className="px-8 py-4 bg-[var(--bg-primary)] border-t border-[var(--border-color)]">
-            <p className="text-[11px] text-[var(--text-muted)] text-center">
+          <div className="px-8 py-4 bg-slate-50 border-t border-slate-200">
+            <p className="text-[11px] text-slate-500 text-center">
               🔒 Your data is secured with end-to-end encryption
             </p>
           </div>

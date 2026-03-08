@@ -37,6 +37,8 @@ const chartData = candleData.map((d) => ({
   ...d,
   bodyMin: Math.min(d.open, d.close),
   bodyMax: Math.max(d.open, d.close),
+  wickRange: [d.low, d.high],
+  bodyRange: [Math.min(d.open, d.close), Math.max(d.open, d.close)],
   bodyLength: Math.abs(d.open - d.close),
   isBullish: d.close > d.open,
   trendLine: (d.open + d.close) / 2 - 2,
@@ -191,13 +193,13 @@ export default function HowToUse() {
                       <Tooltip contentStyle={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)', borderRadius: '8px' }} itemStyle={{ fontSize: 12 }} />
 
                       {/* Wicks */}
-                      <Bar dataKey="high" barSize={2} fillOpacity={0}>
+                      <Bar dataKey="wickRange" barSize={2}>
                         {chartData.map((entry, index) => (
                           <Cell key={`wick-${index}`} fill={entry.isBullish ? '#10b981' : '#f43f5e'} />
                         ))}
                       </Bar>
                       {/* Bodies */}
-                      <Bar dataKey="bodyMax" barSize={16}>
+                      <Bar dataKey="bodyRange" barSize={16}>
                         {chartData.map((entry, index) => (
                           <Cell key={`body-${index}`} fill={entry.isBullish ? '#10b981' : '#f43f5e'} />
                         ))}

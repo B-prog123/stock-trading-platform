@@ -25,44 +25,37 @@ function TradingViewWidget({ symbol, interval = 'D' }: TradingViewWidgetProps) {
     widgetDiv.style.width = '100%';
     currentContainer.appendChild(widgetDiv);
 
-    // Use a small timeout to ensure the DOM is fully settled before script insertion
-    const timeoutId = setTimeout(() => {
-      if (!isMounted || !currentContainer) return;
+    const script = document.createElement("script");
+    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
+    script.type = "text/javascript";
+    script.async = true;
 
-      const script = document.createElement("script");
-      script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
-      script.type = "text/javascript";
-      script.async = true;
-      script.crossOrigin = "anonymous";
+    const config = {
+      "autosize": true,
+      "symbol": `BSE:${symbol}`,
+      "interval": interval,
+      "timezone": "Etc/UTC",
+      "theme": theme || "dark",
+      "style": "1",
+      "locale": "en",
+      "enable_publishing": false,
+      "allow_symbol_change": true,
+      "hide_side_toolbar": false,
+      "withdateranges": true,
+      "details": true,
+      "hotlist": true,
+      "calendar": false,
+      "show_popup_button": true,
+      "popup_width": "1000",
+      "popup_height": "650",
+      "support_host": "https://www.tradingview.com"
+    };
 
-      const config = {
-        "autosize": true,
-        "symbol": `BSE:${symbol}`,
-        "interval": interval,
-        "timezone": "Etc/UTC",
-        "theme": theme || "dark",
-        "style": "1",
-        "locale": "en",
-        "enable_publishing": false,
-        "allow_symbol_change": true,
-        "hide_side_toolbar": false,
-        "withdateranges": true,
-        "details": true,
-        "hotlist": true,
-        "calendar": false,
-        "show_popup_button": true,
-        "popup_width": "1000",
-        "popup_height": "650",
-        "support_host": "https://www.tradingview.com"
-      };
-
-      script.innerHTML = JSON.stringify(config);
-      currentContainer.appendChild(script);
-    }, 100);
+    script.innerHTML = JSON.stringify(config);
+    currentContainer.appendChild(script);
 
     return () => {
       isMounted = false;
-      clearTimeout(timeoutId);
       if (currentContainer) {
         currentContainer.innerHTML = '';
       }
