@@ -66,9 +66,36 @@ export default function Auth() {
         body: JSON.stringify({ name, email, password }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data?.error || 'Failed to send OTP'); return; }
-    } catch { setError('Network error. Please try again.'); }
-    finally { setLoading(false); }
+      if (!res.ok) {
+        setError(data?.error || 'Account creation failed');
+        setLoading(false);
+        return;
+      }
+
+      setInfo('Account created successfully! Signing you in...');
+      setIsLogin(true); // Switch context to Sign In view visually
+
+      // Automatically sign in the user
+      const loginRes = await fetch(apiUrl('/api/auth/login'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const loginData = await loginRes.json();
+
+      if (loginRes.ok) {
+        // Brief delay so the user can read the success notification
+        setTimeout(() => {
+          login(loginData.token, loginData.user);
+        }, 1200);
+      } else {
+        setError(loginData?.error || 'Auto-login failed. Please sign in manually.');
+        setLoading(false);
+      }
+    } catch {
+      setError('Network error. Please try again.');
+      setLoading(false);
+    }
   };
 
 
