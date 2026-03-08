@@ -143,11 +143,11 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-[#141821] text-[var(--text-primary)] flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-white text-[var(--text-primary)] flex items-center justify-center p-4 relative overflow-hidden">
       {/* Background: Premium Multi-Layered Animation */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-        {/* Dark Overlay - Reduced to 30% to let texture through */}
-        <div className="absolute inset-0 bg-black/30 z-[1]" />
+        {/* Light Overlay - Let texture through on white bg */}
+        <div className="absolute inset-0 bg-white/80 z-[1]" />
 
         {/* Layer 1: Ambient Mesh Grid - Intensified opacity */}
         <motion.div
@@ -163,12 +163,12 @@ export default function Auth() {
           transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
         />
 
-        {/* Layer 2: Growth Moving Bars - Darker, more intense gradients */}
+        {/* Layer 2: Growth Moving Bars - Light theme */}
         <div className="absolute bottom-0 left-0 right-0 h-[400px] flex items-end justify-around px-1 opacity-[0.12] pointer-events-none">
-          {[...Array(50)].map((_, i) => (
+          {[...Array(15)].map((_, i) => (
             <motion.div
               key={i}
-              className="flex-1 mx-[1px] bg-gradient-to-t from-emerald-950 via-blue-900/40 to-transparent rounded-t-full"
+              className="flex-1 mx-[1px] bg-gradient-to-t from-emerald-200 via-blue-100/40 to-transparent rounded-t-full"
               initial={{ height: 0 }}
               animate={{
                 height: [
@@ -189,12 +189,12 @@ export default function Auth() {
           ))}
         </div>
 
-        {/* Layer 3: Dynamic Price Action Line - More prominent and darker stroke */}
+        {/* Layer 3: Dynamic Price Action Line - Light theme */}
         <motion.svg className="absolute inset-x-0 bottom-[20%] w-full h-[300px] opacity-[0.15]" viewBox="0 0 1200 300" preserveAspectRatio="none">
           <motion.path
             d="M0 250 L100 220 L200 240 L300 180 L400 210 L500 150 L600 170 L700 120 L800 140 L900 80 L1000 100 L1100 50 L1200 70"
             fill="none"
-            stroke="url(#lineGradDark)"
+            stroke="url(#lineGradLight)"
             strokeWidth="4"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -208,15 +208,15 @@ export default function Auth() {
             transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
           />
           <defs>
-            <linearGradient id="lineGradDark" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#1e3a8a" />
-              <stop offset="100%" stopColor="#064e3b" />
+            <linearGradient id="lineGradLight" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#3b82f6" />
+              <stop offset="100%" stopColor="#10b981" />
             </linearGradient>
           </defs>
         </motion.svg>
 
         {/* Layer 4: Floating Particles - Lowered and blue-tinted */}
-        {[...Array(25)].map((_, i) => (
+        {[...Array(10)].map((_, i) => (
           <motion.div
             key={i}
             className="absolute w-1 h-1 bg-blue-400/20 rounded-full"
@@ -239,8 +239,8 @@ export default function Auth() {
         ))}
       </div>
 
-      {/* Ticker - Darker theme */}
-      <div className="fixed top-0 left-0 right-0 z-20 bg-slate-900/80 backdrop-blur-md text-emerald-500 text-[10px] font-black py-2 overflow-hidden border-b border-slate-800 uppercase tracking-widest">
+      {/* Ticker - Light theme */}
+      <div className="fixed top-0 left-0 right-0 z-20 bg-white/80 backdrop-blur-md text-emerald-600 text-[10px] font-black py-2 overflow-hidden border-b border-gray-200 uppercase tracking-widest">
         <motion.div className="flex gap-10 whitespace-nowrap w-max"
           animate={{ x: [0, -900] }} transition={{ duration: 25, repeat: Infinity, ease: 'linear' }}>
           {[...tickerTape, ...tickerTape].map((t, i) => <span key={i} className="mx-6 flex items-center gap-2">
