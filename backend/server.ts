@@ -194,7 +194,7 @@ const executeDueSip = async (sip: any) => {
   sip.status = shouldComplete ? "COMPLETED" : "ACTIVE";
   await sip.save();
 
-  await createSipNotification(String(sip.userId), String(sip._id), "EXECUTED", `SIP executed for ${sip.stockSymbol}: $${sip.investmentAmount.toFixed(2)} invested.`);
+  await createSipNotification(String(sip.userId), String(sip._id), "EXECUTED", `SIP executed for ${sip.stockSymbol}: ₹${sip.investmentAmount.toFixed(2)} invested.`);
   if (shouldComplete) await createSipNotification(String(sip.userId), String(sip._id), "COMPLETED", `SIP for ${sip.stockSymbol} has reached its end date and is now completed.`);
 };
 

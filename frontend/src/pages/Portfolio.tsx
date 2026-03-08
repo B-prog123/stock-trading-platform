@@ -243,13 +243,13 @@ export default function Portfolio() {
           <MetricCard title="Diversification" value={`${diversificationScore}/100`} subtitle={diversificationScore > 70 ? 'Excellent spread' : 'Concentrated risk'} icon={<PieChartIcon className="text-cyan-400" size={20} />} progress={diversificationScore} />
         </motion.div>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-          <MetricCard title="Current Value" value={`$${totalValue.toLocaleString(undefined, { maximumFractionDigits: 1 })}`} subtitle="Live value" icon={<Wallet className="text-emerald-400" size={20} />} />
+          <MetricCard title="Current Value" value={`₹${totalValue.toLocaleString(undefined, { maximumFractionDigits: 1 })}`} subtitle="Live value" icon={<Wallet className="text-emerald-400" size={20} />} />
         </motion.div>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
-          <MetricCard title="Total P&L" value={`${totals.profitLoss >= 0 ? '+' : '-'}$${Math.abs(totals.profitLoss).toLocaleString(undefined, { maximumFractionDigits: 1 })}`} subtitle={`${totals.profitLossPercent >= 0 ? '+' : ''}${totals.profitLossPercent.toFixed(2)}%`} icon={totals.profitLoss >= 0 ? <TrendingUp className="text-emerald-400" size={20} /> : <TrendingDown className="text-red-400" size={20} />} />
+          <MetricCard title="Total P&L" value={`${totals.profitLoss >= 0 ? '+' : '-'}₹${Math.abs(totals.profitLoss).toLocaleString(undefined, { maximumFractionDigits: 1 })}`} subtitle={`${totals.profitLossPercent >= 0 ? '+' : ''}${totals.profitLossPercent.toFixed(2)}%`} icon={totals.profitLoss >= 0 ? <TrendingUp className="text-emerald-400" size={20} /> : <TrendingDown className="text-red-400" size={20} />} />
         </motion.div>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="col-span-2 sm:col-span-1">
-          <MetricCard title="SIP Invested" value={`$${(breakdown.sipInvested || 0).toLocaleString(undefined, { maximumFractionDigits: 1 })}`} subtitle={`Manual: $${(breakdown.manualInvested || 0).toLocaleString(undefined, { maximumFractionDigits: 1 })}`} icon={<Activity className="text-cyan-400" size={20} />} />
+          <MetricCard title="SIP Invested" value={`₹${(breakdown.sipInvested || 0).toLocaleString(undefined, { maximumFractionDigits: 1 })}`} subtitle={`Manual: ₹${(breakdown.manualInvested || 0).toLocaleString(undefined, { maximumFractionDigits: 1 })}`} icon={<Activity className="text-cyan-400" size={20} />} />
         </motion.div>
       </div>
 

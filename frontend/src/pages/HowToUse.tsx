@@ -141,9 +141,9 @@ export default function HowToUse() {
                 <div className="bg-[var(--bg-primary)] p-6 rounded-2xl border border-[var(--border-color)] flex flex-col items-center justify-center min-h-[250px] shadow-inner">
                   <div className="text-6xl mb-4">🍕</div>
                   <div className="flex gap-2 mb-2">
-                    <span className="w-8 h-8 rounded bg-emerald-500/20 text-emerald-500 flex flex-col items-center justify-center font-bold text-xs">$10</span>
-                    <span className="w-8 h-8 rounded bg-emerald-500/20 text-emerald-500 flex flex-col items-center justify-center font-bold text-xs">$10</span>
-                    <span className="w-8 h-8 rounded bg-emerald-500/20 text-emerald-500 flex flex-col items-center justify-center font-bold text-xs">$10</span>
+                    <span className="w-8 h-8 rounded bg-emerald-500/20 text-emerald-500 flex flex-col items-center justify-center font-bold text-xs">₹10</span>
+                    <span className="w-8 h-8 rounded bg-emerald-500/20 text-emerald-500 flex flex-col items-center justify-center font-bold text-xs">₹10</span>
+                    <span className="w-8 h-8 rounded bg-emerald-500/20 text-emerald-500 flex flex-col items-center justify-center font-bold text-xs">₹10</span>
                   </div>
                   <p className="text-xs text-[var(--text-muted)] mt-4">Buying shares is like buying slices of a profitable business.</p>
                 </div>
@@ -255,7 +255,7 @@ export default function HowToUse() {
                   <PiggyBank size={24} />
                 </div>
                 <h4 className="text-lg font-bold text-[var(--text-primary)] mb-2">SIPs (Auto-Pilot)</h4>
-                <p className="text-sm text-[var(--text-secondary)] mb-4">Systematic Investment Planning. Tell Stockify to automatically buy $100 of Reliance every month. It averages out the price and minimizes risk.</p>
+                <p className="text-sm text-[var(--text-secondary)] mb-4">Systematic Investment Planning. Tell Stockify to automatically buy ₹100 of Reliance every month. It averages out the price and minimizes risk.</p>
                 <div className="text-xs font-bold text-amber-500 bg-amber-500/10 px-3 py-1.5 rounded-lg inline-block">Use it to: Sleep peacefully</div>
               </div>
 

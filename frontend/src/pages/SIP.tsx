@@ -3,7 +3,7 @@ import { useAuth } from '../App';
 import { motion } from 'motion/react';
 import { apiUrl } from '../lib/api';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Calendar, Clock3, PauseCircle, PlayCircle, PlusCircle, Trash2, Pencil, Activity, DollarSign, TrendingUp, History, Sparkles } from 'lucide-react';
+import { Calendar, Clock3, PauseCircle, PlayCircle, PlusCircle, Trash2, Pencil, Activity, IndianRupee, TrendingUp, History, Sparkles } from 'lucide-react';
 
 interface SIPOrder {
   id: number;
@@ -308,9 +308,9 @@ export default function SIP() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard icon={<Activity size={18} />} label="Active SIPs" value={String(activeCount || summary.activeSips)} />
-        <StatCard icon={<DollarSign size={18} />} label="Total Invested" value={`$${(summary.totalInvested || 0).toLocaleString(undefined, { maximumFractionDigits: 1 })}`} />
+        <StatCard icon={<IndianRupee size={18} />} label="Total Invested" value={`₹${(summary.totalInvested || 0).toLocaleString(undefined, { maximumFractionDigits: 1 })}`} />
         <StatCard icon={<TrendingUp size={18} />} label="Total Shares" value={(summary.totalShares || 0).toFixed(2)} />
-        <StatCard icon={<History size={18} />} label="Profit / Loss" value={`${summary.profitLoss >= 0 ? '+' : ''}$${(summary.profitLoss || 0).toLocaleString(undefined, { maximumFractionDigits: 1 })}`} tone={summary.profitLoss >= 0 ? 'up' : 'down'} />
+        <StatCard icon={<History size={18} />} label="Profit / Loss" value={`${summary.profitLoss >= 0 ? '+' : ''}₹${(summary.profitLoss || 0).toLocaleString(undefined, { maximumFractionDigits: 1 })}`} tone={summary.profitLoss >= 0 ? 'up' : 'down'} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -349,7 +349,7 @@ export default function SIP() {
               </div>
 
               <div>
-                <label className="text-xs text-[var(--text-secondary)] uppercase tracking-wider">Investment Amount ($)</label>
+                <label className="text-xs text-[var(--text-secondary)] uppercase tracking-wider">Investment Amount (₹)</label>
                 <input
                   type="number"
                   min={1}
@@ -434,7 +434,7 @@ export default function SIP() {
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="currentColor" opacity={0.05} vertical={false} />
                   <XAxis dataKey="year" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--text-secondary)' }} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--text-secondary)' }} tickFormatter={(val) => `$${val > 1000 ? (val / 1000).toFixed(0) + 'k' : val}`} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--text-secondary)' }} tickFormatter={(val) => `₹${val > 1000 ? (val / 1000).toFixed(0) + 'k' : val}`} />
                   <Tooltip contentStyle={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)', borderRadius: '8px', fontSize: '12px' }} />
                   <Area type="monotone" dataKey="projected" name="Projected Value" stroke="#10b981" fillOpacity={1} fill="url(#colorProjected)" />
                   <Area type="monotone" dataKey="invested" name="Amount Invested" stroke="#64748b" fill="none" strokeDasharray="5 5" />
@@ -578,8 +578,8 @@ export default function SIP() {
                         <tr key={row.id} className="border-t border-[var(--border-color)]">
                           <td className="px-4 py-3">{row.scheduledDate}</td>
                           <td className="px-4 py-3">{row.executedAt ? new Date(row.executedAt).toLocaleString() : '-'}</td>
-                          <td className="px-4 py-3 font-mono">{row.price ? `$${row.price.toFixed(2)}` : '-'}</td>
-                          <td className="px-4 py-3 font-mono">{row.amount ? `$${row.amount.toFixed(2)}` : '-'}</td>
+                          <td className="px-4 py-3 font-mono">{row.price ? `₹${row.price.toFixed(2)}` : '-'}</td>
+                          <td className="px-4 py-3 font-mono">{row.amount ? `₹${row.amount.toFixed(2)}` : '-'}</td>
                           <td className="px-4 py-3 font-mono">{row.shares ? row.shares.toFixed(6) : '-'}</td>
                           <td className="px-4 py-3">
                             <span className={`px-2 py-1 rounded-full text-[10px] font-semibold ${row.status === 'SUCCESS' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-500/15 text-rose-400'}`}>

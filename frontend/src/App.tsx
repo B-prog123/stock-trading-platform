@@ -160,7 +160,7 @@ export default function App() {
       }
       if (res.ok) {
         await refreshUser();
-        addNotification('Deposit Successful', `$${amount.toLocaleString()} has been added to your balance.`, 'success');
+        addNotification('Deposit Successful', `₹${amount.toLocaleString()} has been added to your balance.`, 'success');
       } else {
         const data = await res.json().catch(() => ({ error: 'Deposit failed' }));
         addNotification('Deposit Failed', data.error || 'Failed to process deposit', 'error');
