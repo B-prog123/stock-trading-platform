@@ -22,6 +22,8 @@ export default function MarketNews() {
       setLoading(false);
     };
     fetchNews();
+    const interval = setInterval(fetchNews, 60 * 60 * 1000); // 1 hour
+    return () => clearInterval(interval);
   }, []);
 
   if (loading) {

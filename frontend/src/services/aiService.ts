@@ -41,7 +41,7 @@ export const generateMarketNews = async (): Promise<any[]> => {
     const ai = getAI();
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: "Generate 5 realistic and diverse stock market news headlines for today. Each item should have: title, summary, category (e.g., Tech, Energy, Macro), and sentiment (positive, negative, neutral). Return as JSON array.",
+      contents: `Generate 5 realistic, detailed, and data-driven Indian stock market (NSE/BSE) news headlines for today (${new Date().toLocaleDateString()}). Each item must sound like professional financial journalism with specific numbers, percentages, or real company names. Each item should have: title, summary, category (e.g., Tech, Finance, Auto, Macro), and sentiment (positive, negative, neutral). Return strictly as a JSON array.`,
       config: { responseMimeType: "application/json" }
     });
 
@@ -50,11 +50,11 @@ export const generateMarketNews = async (): Promise<any[]> => {
   } catch (error) {
     console.error("AI News generation error:", error);
     return [
-      { title: "Market shows resilience amid inflation data", summary: "Stocks remained steady as investors processed the latest consumer price index report.", category: "Macro", sentiment: "neutral" },
-      { title: "Tech giants lead rally in afternoon trading", summary: "Major technology companies saw gains as bond yields retreated.", category: "Tech", sentiment: "positive" },
-      { title: "Energy sector faces headwinds", summary: "Oil prices dropped following reports of increased production.", category: "Energy", sentiment: "negative" },
-      { title: "Retail sales beat expectations", summary: "Consumer spending remained strong in the latest quarter, boosting retail stocks.", category: "Retail", sentiment: "positive" },
-      { title: "Federal Reserve hints at rate cuts", summary: "The central bank indicated potential interest rate reductions later this year.", category: "Macro", sentiment: "positive" }
+      { title: "Nifty 50 Reaches New All-Time High Amid Reliance Rally", summary: "Indian indices surged as Reliance Industries posted a 4% gain following strong quarterly earnings, pushing the Nifty above the crucial 22,000 mark.", category: "Macro", sentiment: "positive" },
+      { title: "TCS Secures $1.5B Cloud Transformation Deal", summary: "IT bellwether Tata Consultancy Services announced a multi-year partnership with a top European bank, easing concerns over sector slowdown.", category: "Tech", sentiment: "positive" },
+      { title: "HDFC Bank Faces Margin Pressures in Q3", summary: "India's largest private lender reported steady deposit growth, but net interest margins contracted by 10 bps, leading to a mild stock sell-off.", category: "Finance", sentiment: "negative" },
+      { title: "Tata Motors EV Sales Surge 25% YoY", summary: "The automaker's continued dominance in the Indian EV segment sparked a 3% intraday gain, supported by new EV model announcements.", category: "Auto", sentiment: "positive" },
+      { title: "FIIs Pull Out ₹2,000 Crore Ahead of US Fed Verdict", summary: "Foreign institutional investors turned net sellers in the cash market, preferring to wait on the sidelines for the upcoming US interest rate decision.", category: "Macro", sentiment: "neutral" }
     ];
   }
 };

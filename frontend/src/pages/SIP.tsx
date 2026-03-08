@@ -41,9 +41,9 @@ interface SIPSummary {
 const quickSymbols = ['RELIANCE', 'TCS', 'HDFCBANK', 'INFY', 'ICICIBANK', 'SBIN'];
 
 const sipIdeas = [
-  { name: 'Safe Bluechip', symbol: 'RELIANCE', desc: 'Consistent large-cap growth', amount: 1000, tag: 'Low Risk' },
-  { name: 'High Growth IT', symbol: 'TCS', desc: 'Capitalize on tech & AI', amount: 500, tag: 'High Growth' },
-  { name: 'Financial Core', symbol: 'HDFCBANK', desc: 'Banking sector stability', amount: 750, tag: 'Moderate Risk' },
+  { name: 'Safe Bluechip', symbol: 'RELIANCE', desc: 'Consistent large-cap growth', amount: 5000, tag: 'Low Risk' },
+  { name: 'High Growth IT', symbol: 'TCS', desc: 'Capitalize on tech & AI', amount: 3000, tag: 'High Growth' },
+  { name: 'Financial Core', symbol: 'HDFCBANK', desc: 'Banking sector stability', amount: 2500, tag: 'Moderate Risk' },
 ];
 
 export default function SIP() {
@@ -59,7 +59,7 @@ export default function SIP() {
 
   const [form, setForm] = useState({
     stockSymbol: 'RELIANCE',
-    investmentAmount: 500,
+    investmentAmount: 5000,
     frequency: 'MONTHLY' as 'WEEKLY' | 'MONTHLY',
     startDate: new Date().toISOString().split('T')[0],
     endDate: '',
@@ -153,7 +153,7 @@ export default function SIP() {
   const resetForm = () => {
     setForm({
       stockSymbol: 'RELIANCE',
-      investmentAmount: 500,
+      investmentAmount: 5000,
       frequency: 'MONTHLY',
       startDate: new Date().toISOString().split('T')[0],
       endDate: '',
