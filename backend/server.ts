@@ -71,78 +71,145 @@ const getNextSipDate = (fromDate: Date, frequency: "WEEKLY" | "MONTHLY") => {
   return next;
 };
 
+// ─── NSE India Session ─────────────────────────────────────────────────────
+// NSE requires browser-like cookies — we grab them from the homepage first.
+const NSE_HEADERS = {
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+  "Accept": "application/json, text/plain, */*",
+  "Accept-Language": "en-US,en;q=0.9",
+  "Accept-Encoding": "gzip, deflate, br",
+  "Referer": "https://www.nseindia.com/",
+  "Connection": "keep-alive",
+  "sec-fetch-dest": "empty",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-site": "same-origin",
+};
+
+let nseSession: { cookies: string; fetchedAt: number } | null = null;
+const NSE_SESSION_TTL_MS = 45 * 60 * 1000; // 45 minutes
+
+const getNseSession = async (): Promise<string> => {
+  if (nseSession && Date.now() - nseSession.fetchedAt < NSE_SESSION_TTL_MS) {
+    return nseSession.cookies;
+  }
+  const res = await axios.get("https://www.nseindia.com", {
+    headers: { ...NSE_HEADERS, Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" },
+    timeout: 12000,
+  });
+  const rawCookies: string[] = (res.headers["set-cookie"] as string[] | undefined) ?? [];
+  const cookies = rawCookies.map((c: string) => c.split(";")[0]).join("; ");
+  nseSession = { cookies, fetchedAt: Date.now() };
+  console.log("✅ NSE session refreshed");
+  return cookies;
+};
+
+// NSE symbol lookup (app symbol → NSE symbol)
+const NSE_SYMBOL_MAP: Record<string, string> = { "L&T": "LT" };
+const toNseSymbol = (sym: string) => NSE_SYMBOL_MAP[sym] || sym;
+
+// Cached NIFTY 50 price map (refreshed every fetch cycle)
+let niftyCache: { data: Record<string, { price: number; change: number }>; fetchedAt: number } | null = null;
+const NIFTY_CACHE_TTL_MS = 15000;
+
+const fetchNseNifty50 = async (): Promise<Record<string, { price: number; change: number }>> => {
+  if (niftyCache && Date.now() - niftyCache.fetchedAt < NIFTY_CACHE_TTL_MS) {
+    return niftyCache.data;
+  }
+  const cookies = await getNseSession();
+  const res = await axios.get("https://www.nseindia.com/api/equity-stockIndices?index=NIFTY%2050", {
+    headers: { ...NSE_HEADERS, Cookie: cookies },
+    timeout: 10000,
+  });
+  const stocks: any[] = res.data?.data ?? [];
+  const map: Record<string, { price: number; change: number }> = {};
+  for (const s of stocks) {
+    const sym: string = (s.symbol || "").toUpperCase();
+    const price: number = s.lastPrice ?? s.open ?? 0;
+    const change: number = s.pChange ?? 0; // percent change from previous close
+    if (sym && price > 0) {
+      map[sym] = { price, change: parseFloat(change.toFixed(2)) };
+    }
+  }
+  niftyCache = { data: map, fetchedAt: Date.now() };
+  return map;
+};
+
+// ─── getCurrentStockPrice (used by SIP & trade execution) ──────────────────
 const getCurrentStockPrice = async (symbol: string): Promise<number> => {
   const safeSymbol = symbol.trim().toUpperCase();
-  // Map plain symbols to Yahoo Finance NSE format
-  const yahooSym = safeSymbol === "L&T" ? "LT.NS" : safeSymbol.includes(".") ? safeSymbol : `${safeSymbol}.NS`;
+  // 1. Try NSE first
   try {
+    const nseMap = await fetchNseNifty50();
+    const nseSym = toNseSymbol(safeSymbol);
+    if (nseMap[nseSym]?.price > 0) return nseMap[nseSym].price;
+    // If not in NIFTY 50, fetch individual equity endpoint
+    const cookies = await getNseSession();
+    const res = await axios.get(`https://www.nseindia.com/api/quote-equity?symbol=${encodeURIComponent(nseSym)}`, {
+      headers: { ...NSE_HEADERS, Cookie: cookies },
+      timeout: 8000,
+    });
+    const price: number = res.data?.priceInfo?.lastPrice ?? 0;
+    if (price > 0) return price;
+  } catch { /* fall through */ }
+
+  // 2. Fall back to yahoo-finance2
+  try {
+    const yahooSym = safeSymbol === "L&T" ? "LT.NS" : safeSymbol.includes(".") ? safeSymbol : `${safeSymbol}.NS`;
     const quote = await yahooFinance.quote(yahooSym, {}, { validateResult: false }) as any;
-    const price = quote?.regularMarketPrice;
-    if (typeof price === "number" && price > 0) return price;
-  } catch (error) {
-    // Try US symbol as fallback (for non-Indian stocks)
-    try {
-      const quote = await yahooFinance.quote(safeSymbol, {}, { validateResult: false }) as any;
-      const price = quote?.regularMarketPrice;
-      if (typeof price === "number" && price > 0) return price;
-    } catch { /* ignore */ }
-    console.error(`Price fallback for ${safeSymbol}:`, (error as Error).message);
-  }
+    const price: number = quote?.regularMarketPrice ?? 0;
+    if (price > 0) return price;
+  } catch { /* fall through */ }
+
   return fallbackPrices[`${safeSymbol}.NS`] || fallbackPrices[safeSymbol] || 100;
 };
 
-// Batch price cache — 15 second TTL
-const priceCache: Map<string, { price: number; change: number; cachedAt: number }> = new Map();
-const PRICE_CACHE_TTL_MS = 15000;
-
+// ─── Batch price fetch for /api/prices endpoint ────────────────────────────
 const getBatchPrices = async (symbols: string[]): Promise<Record<string, { price: number; change: number }>> => {
   const result: Record<string, { price: number; change: number }> = {};
-  const nowMs = Date.now();
 
-  const toFetch: string[] = [];
-  for (const sym of symbols) {
-    const upper = sym.trim().toUpperCase();
-    const cached = priceCache.get(upper);
-    if (cached && nowMs - cached.cachedAt < PRICE_CACHE_TTL_MS) {
-      result[upper] = { price: cached.price, change: cached.change };
-    } else {
-      toFetch.push(upper);
+  // Attempt 1: NSE India (fetches all NIFTY 50 in one call)
+  try {
+    const nseMap = await fetchNseNifty50();
+    for (const sym of symbols) {
+      // sym may be "RELIANCE.NS" — strip .NS for NSE lookup
+      const appSym = sym.replace(/\.NS$/i, "").toUpperCase();
+      const nseSym = toNseSymbol(appSym);
+      if (nseMap[nseSym]) {
+        result[sym] = nseMap[nseSym]; // key matches what frontend sent
+      }
     }
+    if (Object.keys(result).length >= Math.floor(symbols.length * 0.7)) {
+      console.log(`✅ NSE prices fetched for ${Object.keys(result).length}/${symbols.length} symbols`);
+      return result;
+    }
+  } catch (err) {
+    console.warn("NSE India fetch failed:", (err as Error).message);
   }
 
-  if (toFetch.length > 0) {
-    await Promise.allSettled(
-      toFetch.map(async (sym) => {
-        try {
-          const quote = await yahooFinance.quote(sym, {}, { validateResult: false }) as any;
-          const price = typeof quote?.regularMarketPrice === "number" && quote.regularMarketPrice > 0
-            ? quote.regularMarketPrice
-            : (fallbackPrices[sym] || 100);
-
-          // Compute change% from price vs previous close — most reliable approach
-          // yahoo-finance2 returns regularMarketChangePercent as decimal (0.012 = 1.2%)
-          let change = 0;
-          const prevClose = quote?.regularMarketPreviousClose;
-          if (typeof prevClose === "number" && prevClose > 0) {
-            change = parseFloat(((price - prevClose) / prevClose * 100).toFixed(2));
-          } else if (typeof quote?.regularMarketChangePercent === "number") {
-            // Multiply by 100 because yahoo-finance2 returns as decimal fraction
-            change = parseFloat((quote.regularMarketChangePercent * 100).toFixed(2));
-          }
-
-          priceCache.set(sym, { price, change, cachedAt: nowMs });
-          result[sym] = { price, change };
-        } catch {
-          const fallback = fallbackPrices[sym] || 100;
-          result[sym] = { price: fallback, change: 0 };
-        }
-      })
-    );
-  }
+  // Attempt 2: yahoo-finance2 (parallel per-symbol)
+  console.log("⚠️  Falling back to yahoo-finance2");
+  await Promise.allSettled(
+    symbols.filter(s => !result[s]).map(async (sym) => {
+      try {
+        const quote = await yahooFinance.quote(sym, {}, { validateResult: false }) as any;
+        const price: number = quote?.regularMarketPrice ?? 0;
+        if (price <= 0) throw new Error("no price");
+        const prevClose: number = quote?.regularMarketPreviousClose ?? 0;
+        const change = prevClose > 0
+          ? parseFloat(((price - prevClose) / prevClose * 100).toFixed(2))
+          : parseFloat(((quote?.regularMarketChangePercent ?? 0) * 100).toFixed(2));
+        result[sym] = { price, change };
+      } catch {
+        const stripped = sym.replace(/\.NS$/i, "").toUpperCase();
+        result[sym] = { price: fallbackPrices[sym] || fallbackPrices[stripped] || 100, change: 0 };
+      }
+    })
+  );
 
   return result;
 };
 
+// ─── /api/prices endpoint ──────────────────────────────────────────────────
 // Public endpoint — no auth required
 app.get("/api/prices", async (req, res) => {
   const raw = (req.query.symbols as string) || "";
