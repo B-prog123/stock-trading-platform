@@ -3,6 +3,7 @@ import { useAuth } from '../App';
 import { Search, Trash2, Plus, TrendingUp, TrendingDown, Eye } from 'lucide-react';
 import { apiUrl } from '../lib/api';
 import { motion, AnimatePresence } from 'motion/react';
+import { usePrices } from '../contexts/StockPriceContext';
 
 export default function Watchlist() {
   const { token, setActiveTab, setSelectedSymbol, logout } = useAuth();
@@ -21,20 +22,19 @@ export default function Watchlist() {
     fetchWatchlist();
   }, [token]);
 
-  // Simulate real-time price updates
+  const { prices } = usePrices();
+
+  // Sync watchlist prices with live data from context whenever prices update
   useEffect(() => {
-    if (watchlist.length === 0) return;
-    const interval = setInterval(() => {
-      setWatchlist(prev =>
-        prev.map(item => ({
-          ...item,
-          price: Math.max(1, (item.price || 150) + (Math.random() * 2 - 1)),
-          change: (item.change || 0) + (Math.random() * 0.2 - 0.1),
-        }))
-      );
-    }, 2000);
-    return () => clearInterval(interval);
-  }, [watchlist.length]);
+    if (Object.keys(prices).length === 0) return;
+    setWatchlist(prev =>
+      prev.map(item => {
+        const live = prices[item.symbol];
+        if (!live) return item; // keep existing price for unknown symbols
+        return { ...item, price: live.price, change: live.change };
+      })
+    );
+  }, [prices]);
 
   const fetchWatchlist = async () => {
     try {
@@ -45,11 +45,15 @@ export default function Watchlist() {
       if (res.ok) {
         const data = await res.json();
         setWatchlist(
-          data.map((item: any) => ({
-            ...item,
-            price: Math.random() * 500 + 50,
-            change: Math.random() * 10 - 5,
-          }))
+          data.map((item: any) => {
+            const live = prices[item.symbol];
+            return {
+              ...item,
+              // Use real price if available, otherwise a reasonable placeholder
+              price: live?.price ?? 150,
+              change: live?.change ?? 0,
+            };
+          })
         );
       }
     } catch (err) {

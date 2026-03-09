@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Filter, TrendingUp, TrendingDown, Activity, ArrowRight, Zap } from 'lucide-react';
 import { useAuth } from '../App';
+import { usePrices, mergePrices } from '../contexts/StockPriceContext';
 
 export const sharedStockData = [
     { symbol: 'RELIANCE', name: 'Reliance Industries', price: 2950.25, change: 1.25, volume: '5.4M', sector: 'Energy', pe: '28.4' },
@@ -19,20 +20,25 @@ export const sharedStockData = [
 export default function Screener() {
     const { setSelectedSymbol, setActiveTab } = useAuth();
     const [filter, setFilter] = useState<'all' | 'gainers' | 'losers' | 'volume'>('all');
-    const [data, setData] = useState(sharedStockData);
+    const { prices } = usePrices();
 
+    // Merge live prices into static stock metadata
+    const liveData = mergePrices(sharedStockData, prices);
+
+    const [data, setData] = useState(liveData);
+
+    // Re-sort whenever filter or live prices change
     useEffect(() => {
-        let sorted = [...sharedStockData];
+        let sorted = [...liveData];
         if (filter === 'gainers') {
             sorted = sorted.filter(s => s.change > 0).sort((a, b) => b.change - a.change);
         } else if (filter === 'losers') {
             sorted = sorted.filter(s => s.change < 0).sort((a, b) => a.change - b.change);
         } else if (filter === 'volume') {
-            // Very basic mock volume sort
             sorted = sorted.sort((a, b) => parseFloat(b.volume) - parseFloat(a.volume));
         }
         setData(sorted);
-    }, [filter]);
+    }, [filter, prices]);
 
     return (
         <motion.div

@@ -8,6 +8,7 @@ import { getAIStockInsight } from '../services/aiService';
 
 import TradingViewWidget from '../components/TradingViewWidget';
 import { sharedStockData } from './Screener';
+import { usePrices, mergePrices } from '../contexts/StockPriceContext';
 
 interface StockQuote {
   symbol: string;
@@ -119,20 +120,12 @@ export default function Market() {
   const [dayHigh, setDayHigh] = useState(0);
   const [dayLow, setDayLow] = useState(0);
 
-  // ── Real-time Price Fluctuations ──
+  // ── Real-time Price Updates from Yahoo Finance (via backend) ──
+  const { prices } = usePrices();
   useEffect(() => {
-    const interval = setInterval(() => {
-      setStocks(currentStocks =>
-        currentStocks.map(stock => {
-          const changePercent = (Math.random() - 0.5) * 0.4; // +/- 0.2%
-          const newPrice = stock.price * (1 + changePercent / 100);
-          const newChange = stock.change + changePercent;
-          return { ...stock, price: parseFloat(newPrice.toFixed(2)), change: parseFloat(newChange.toFixed(2)) };
-        })
-      );
-    }, 5000); // 5s for smoother performance in dev
-    return () => clearInterval(interval);
-  }, []);
+    if (Object.keys(prices).length === 0) return;
+    setStocks(mergePrices(popularStocks, prices));
+  }, [prices]);
 
   // Sync selected stock with fluctuating list
   useEffect(() => {

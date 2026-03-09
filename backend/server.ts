@@ -46,7 +46,14 @@ app.use(cors({
 }));
 app.use(express.json());
 
-const fallbackPrices: Record<string, number> = { AAPL: 182.63, TSLA: 202.64, NVDA: 726.13, MSFT: 409.72, GOOGL: 147.22, AMZN: 174.42 };
+const fallbackPrices: Record<string, number> = {
+  // US stocks
+  AAPL: 182.63, TSLA: 202.64, NVDA: 726.13, MSFT: 409.72, GOOGL: 147.22, AMZN: 174.42,
+  // Indian NSE stocks (Yahoo Finance uses .NS suffix)
+  "RELIANCE.NS": 2950.25, "TCS.NS": 4120.64, "HDFCBANK.NS": 1450.13,
+  "INFY.NS": 1680.72, "ICICIBANK.NS": 1050.22, "SBIN.NS": 780.42,
+  "WIPRO.NS": 452.10, "ADANIENT.NS": 3100.50, "ITC.NS": 430.15, "LT.NS": 3450.80,
+};
 const toISODate = (date: Date): string => date.toISOString().split("T")[0];
 const parseISODate = (value: string): Date | null => {
   if (!value) return null;
@@ -74,6 +81,68 @@ const getCurrentStockPrice = async (symbol: string): Promise<number> => {
   }
   return fallbackPrices[safeSymbol] || 100;
 };
+
+// Batch price cache — 15 second TTL to avoid Yahoo Finance rate limits
+const priceCache: Map<string, { price: number; change: number; cachedAt: number }> = new Map();
+const PRICE_CACHE_TTL_MS = 15000;
+
+const getBatchPrices = async (symbols: string[]): Promise<Record<string, { price: number; change: number }>> => {
+  const result: Record<string, { price: number; change: number }> = {};
+  const nowMs = Date.now();
+
+  // Separate symbols into cached vs stale
+  const toFetch: string[] = [];
+  for (const sym of symbols) {
+    const upper = sym.trim().toUpperCase();
+    const cached = priceCache.get(upper);
+    if (cached && nowMs - cached.cachedAt < PRICE_CACHE_TTL_MS) {
+      result[upper] = { price: cached.price, change: cached.change };
+    } else {
+      toFetch.push(upper);
+    }
+  }
+
+  if (toFetch.length > 0) {
+    try {
+      const joined = toFetch.join(",");
+      const response = await axios.get("https://query1.finance.yahoo.com/v7/finance/quote", {
+        params: { symbols: joined },
+        timeout: 8000,
+        headers: { "User-Agent": "Mozilla/5.0" }
+      });
+      const quotes: any[] = response?.data?.quoteResponse?.result || [];
+      for (const q of quotes) {
+        const sym = q.symbol?.toUpperCase();
+        if (!sym) continue;
+        const price = typeof q.regularMarketPrice === "number" && q.regularMarketPrice > 0 ? q.regularMarketPrice : (fallbackPrices[sym] || 100);
+        const change = typeof q.regularMarketChangePercent === "number" ? parseFloat(q.regularMarketChangePercent.toFixed(2)) : 0;
+        priceCache.set(sym, { price, change, cachedAt: nowMs });
+        result[sym] = { price, change };
+      }
+    } catch (err) {
+      console.error("Batch price fetch error:", err);
+    }
+    // Fill any symbols that failed fetch with fallback
+    for (const sym of toFetch) {
+      if (!result[sym]) {
+        const fallback = fallbackPrices[sym] || 100;
+        result[sym] = { price: fallback, change: 0 };
+      }
+    }
+  }
+
+  return result;
+};
+
+// Public endpoint — no auth required so the screener/market/dashboard can call it
+app.get("/api/prices", async (req, res) => {
+  const raw = (req.query.symbols as string) || "";
+  const symbols = raw.split(",").map(s => s.trim().toUpperCase()).filter(Boolean);
+  if (symbols.length === 0) return res.status(400).json({ error: "No symbols provided" });
+  if (symbols.length > 30) return res.status(400).json({ error: "Max 30 symbols per request" });
+  const prices = await getBatchPrices(symbols);
+  res.json(prices);
+});
 
 const UserSchema = new Schema({ email: { type: String, unique: true, required: true }, password: { type: String, required: true }, name: { type: String, required: true }, balance: { type: Number, default: 10000 } }, { timestamps: true });
 const PortfolioSchema = new Schema({ userId: { type: Schema.Types.ObjectId, ref: "User", required: true }, symbol: { type: String, required: true }, quantity: { type: Number, required: true }, avgPrice: { type: Number, required: true } }, { timestamps: true });

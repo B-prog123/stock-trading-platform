@@ -24,6 +24,7 @@ import TradingGame from './pages/TradingGame';
 import { motion, AnimatePresence } from 'motion/react';
 import { X } from 'lucide-react';
 import { apiUrl } from './lib/api';
+import { StockPriceProvider } from './contexts/StockPriceContext';
 
 export interface Notification {
   id: string;
@@ -231,95 +232,97 @@ export default function App() {
 
   return (
     <AuthContext.Provider value={providerValue}>
-      <div className="flex flex-col fixed inset-0 bg-[var(--bg-primary)] text-[var(--text-primary)] font-sans overflow-hidden w-full h-[100dvh]">
-        <div className="fixed top-24 right-4 md:right-8 z-[120] pointer-events-none">
-          <div className="space-y-3">
-            <AnimatePresence>
-              {toastNotifications.map((n) => (
+      <StockPriceProvider>
+        <div className="flex flex-col fixed inset-0 bg-[var(--bg-primary)] text-[var(--text-primary)] font-sans overflow-hidden w-full h-[100dvh]">
+          <div className="fixed top-24 right-4 md:right-8 z-[120] pointer-events-none">
+            <div className="space-y-3">
+              <AnimatePresence>
+                {toastNotifications.map((n) => (
+                  <motion.div
+                    key={n.id}
+                    initial={{ opacity: 0, x: 20, y: -6 }}
+                    animate={{ opacity: 1, x: 0, y: 0 }}
+                    exit={{ opacity: 0, x: 20, y: -6 }}
+                    transition={{ duration: 0.2 }}
+                    className={`min-w-[260px] max-w-[340px] rounded border px-4 py-3 shadow-xl backdrop-blur-md pointer-events-auto ${n.type === 'success'
+                      ? 'border-green-500/40 bg-green-500/10'
+                      : n.type === 'error'
+                        ? 'border-red-500/40 bg-red-500/10'
+                        : n.type === 'warning'
+                          ? 'border-amber-500/40 bg-amber-500/10'
+                          : 'border-blue-500/40 bg-blue-500/10'
+                      }`}
+                  >
+                    <p className="text-xs font-bold text-[var(--text-primary)]">{n.title}</p>
+                    <p className="mt-1 text-[11px] leading-relaxed text-[var(--text-secondary)]">{n.message}</p>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          </div>
+
+          <Navbar />
+
+          <div className="flex flex-1 overflow-hidden min-h-0 w-full z-10 relative">
+            <main className="flex-1 max-w-full overflow-x-hidden overflow-y-auto bg-[var(--bg-primary)] p-4 md:p-8 pb-28 lg:pb-8 relative scrollbar-hide">
+              {showAppBrief && (
+                <div className="mb-6 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 md:p-5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <h2 className="text-sm md:text-base font-semibold text-emerald-300">About Stockify AI</h2>
+                      <p className="mt-1 text-sm text-[var(--text-secondary)]">
+                        Stockify AI helps you track real-time market data, manage your portfolio, and make informed trades with built-in AI insights.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setShowAppBrief(false)}
+                      className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                      aria-label="Dismiss app description"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <AnimatePresence>
                 <motion.div
-                  key={n.id}
-                  initial={{ opacity: 0, x: 20, y: -6 }}
-                  animate={{ opacity: 1, x: 0, y: 0 }}
-                  exit={{ opacity: 0, x: 20, y: -6 }}
-                  transition={{ duration: 0.2 }}
-                  className={`min-w-[260px] max-w-[340px] rounded border px-4 py-3 shadow-xl backdrop-blur-md pointer-events-auto ${n.type === 'success'
-                    ? 'border-green-500/40 bg-green-500/10'
-                    : n.type === 'error'
-                      ? 'border-red-500/40 bg-red-500/10'
-                      : n.type === 'warning'
-                        ? 'border-amber-500/40 bg-amber-500/10'
-                        : 'border-blue-500/40 bg-blue-500/10'
-                    }`}
+                  key={activeTab}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.15 }}
                 >
-                  <p className="text-xs font-bold text-[var(--text-primary)]">{n.title}</p>
-                  <p className="mt-1 text-[11px] leading-relaxed text-[var(--text-secondary)]">{n.message}</p>
+                  {activeTab === 'dashboard' && <Dashboard />}
+                  {activeTab === 'guide' && <HowToUse />}
+                  {activeTab === 'market' && <Market />}
+                  {activeTab === 'screener' && <Screener />}
+                  {activeTab === 'market-news' && <MarketNewsPage />}
+                  {activeTab === 'funds' && <Funds />}
+                  {activeTab === 'sip' && <SIP />}
+                  {activeTab === 'watchlist' && <Watchlist />}
+                  {activeTab === 'portfolio' && <Portfolio />}
+                  {activeTab === 'transactions' && <Transactions />}
+                  {activeTab === 'profile-settings' && <ProfileSettings />}
+                  {activeTab === 'preferences' && <Preferences />}
+                  {activeTab === 'support' && <Support />}
+                  {activeTab === 'game' && <TradingGame />}
                 </motion.div>
-              ))}
-            </AnimatePresence>
+              </AnimatePresence>
+
+              {showOnboarding && <Onboarding onComplete={completeOnboarding} />}
+              <AIChatbot />
+
+              {/* Tutorial Overlay - shows after every login */}
+              <AnimatePresence>
+                {showTutorial && <Tutorial onComplete={completeTutorial} />}
+              </AnimatePresence>
+            </main>
+
+            <MobileNav activeTab={activeTab} setActiveTab={setActiveTab} />
           </div>
         </div>
-
-        <Navbar />
-
-        <div className="flex flex-1 overflow-hidden min-h-0 w-full z-10 relative">
-          <main className="flex-1 max-w-full overflow-x-hidden overflow-y-auto bg-[var(--bg-primary)] p-4 md:p-8 pb-28 lg:pb-8 relative scrollbar-hide">
-            {showAppBrief && (
-              <div className="mb-6 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 md:p-5">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <h2 className="text-sm md:text-base font-semibold text-emerald-300">About Stockify AI</h2>
-                    <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                      Stockify AI helps you track real-time market data, manage your portfolio, and make informed trades with built-in AI insights.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setShowAppBrief(false)}
-                    className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
-                    aria-label="Dismiss app description"
-                  >
-                    <X size={18} />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            <AnimatePresence>
-              <motion.div
-                key={activeTab}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.15 }}
-              >
-                {activeTab === 'dashboard' && <Dashboard />}
-                {activeTab === 'guide' && <HowToUse />}
-                {activeTab === 'market' && <Market />}
-                {activeTab === 'screener' && <Screener />}
-                {activeTab === 'market-news' && <MarketNewsPage />}
-                {activeTab === 'funds' && <Funds />}
-                {activeTab === 'sip' && <SIP />}
-                {activeTab === 'watchlist' && <Watchlist />}
-                {activeTab === 'portfolio' && <Portfolio />}
-                {activeTab === 'transactions' && <Transactions />}
-                {activeTab === 'profile-settings' && <ProfileSettings />}
-                {activeTab === 'preferences' && <Preferences />}
-                {activeTab === 'support' && <Support />}
-                {activeTab === 'game' && <TradingGame />}
-              </motion.div>
-            </AnimatePresence>
-
-            {showOnboarding && <Onboarding onComplete={completeOnboarding} />}
-            <AIChatbot />
-
-            {/* Tutorial Overlay - shows after every login */}
-            <AnimatePresence>
-              {showTutorial && <Tutorial onComplete={completeTutorial} />}
-            </AnimatePresence>
-          </main>
-
-          <MobileNav activeTab={activeTab} setActiveTab={setActiveTab} />
-        </div>
-      </div>
+      </StockPriceProvider>
     </AuthContext.Provider>
   );
 }

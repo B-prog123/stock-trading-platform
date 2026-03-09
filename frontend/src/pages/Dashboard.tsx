@@ -10,6 +10,7 @@ import { motion } from 'motion/react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { apiUrl } from '../lib/api';
 import { getAIRecommendations } from '../services/aiService';
+import { usePrices } from '../contexts/StockPriceContext';
 
 export default function Dashboard() {
   const { token, user, logout, setActiveTab, setSelectedSymbol, refreshUser } = useAuth();
@@ -83,25 +84,18 @@ export default function Dashboard() {
     { icon: <Award size={22} />, title: 'Portfolio Analytics', desc: 'Track P&L, holdings value, and investment history in one place.' },
   ];
 
-  // ── Price Fluctuations ──
+  // ── Real-time Price Updates from Yahoo Finance (via shared context) ──
+  const { prices } = usePrices();
   useEffect(() => {
-    const interval = setInterval(() => {
-      setMarketMovers(current =>
-        current.map(m => {
-          const move = (Math.random() - 0.5) * 0.3;
-          const newPrice = m.price * (1 + move / 100);
-          const newChange = m.change + move;
-          return {
-            ...m,
-            price: parseFloat(newPrice.toFixed(2)),
-            change: parseFloat(newChange.toFixed(2)),
-            up: newChange >= 0
-          };
-        })
-      );
-    }, 4000);
-    return () => clearInterval(interval);
-  }, []);
+    if (Object.keys(prices).length === 0) return;
+    setMarketMovers(current =>
+      current.map(m => {
+        const live = prices[m.symbol];
+        if (!live) return m;
+        return { ...m, price: live.price, change: live.change, up: live.change >= 0 };
+      })
+    );
+  }, [prices]);
 
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 pb-10">
