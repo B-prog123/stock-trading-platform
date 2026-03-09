@@ -442,7 +442,7 @@ export default function Portfolio() {
                     const itemReturn = totalCost > 0 ? ((currentValue - totalCost) / totalCost) * 100 : 0;
 
                     return (
-                      <tr key={item.symbol} onClick={() => handleTradeClick(item.symbol)} className="hover:bg-[var(--bg-secondary)] transition-colors group cursor-pointer">
+                      <tr key={item.symbol} onClick={() => handleTradeClick(item.symbol)} className="hover:bg-[var(--bg-secondary)] transition-colors group cursor-pointer relative">
                         <td className="p-3">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-sm bg-[var(--bg-primary)] flex items-center justify-center font-bold text-xs text-[var(--text-primary)] border border-[var(--border-color)]">
@@ -463,6 +463,22 @@ export default function Portfolio() {
                           </div>
                           <div className={`text-[10px] font-mono ${itemReturn >= 0 ? 'text-emerald-500/70' : 'text-rose-500/70'}`}>
                             {itemReturn >= 0 ? '+' : ''}${(currentValue - totalCost).toFixed(2)}
+                          </div>
+
+                          {/* Quick Action Hovers */}
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute right-4 top-1/2 -translate-y-1/2 bg-[var(--bg-secondary)] pl-3 py-1 shadow-[-10px_0_15px_var(--bg-secondary)]">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleTradeClick(item.symbol); }}
+                              className="px-3 py-1 text-[10px] font-bold bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white rounded transition-colors"
+                            >
+                              BUY
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleTradeClick(item.symbol); }}
+                              className="px-3 py-1 text-[10px] font-bold bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded transition-colors"
+                            >
+                              SELL
+                            </button>
                           </div>
                         </td>
                       </tr>

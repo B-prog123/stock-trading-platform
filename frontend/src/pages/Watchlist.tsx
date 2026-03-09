@@ -156,7 +156,7 @@ export default function Watchlist() {
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.05 }}
-                    className="group px-8 py-5 flex items-center justify-between hover:bg-[var(--bg-primary)]/50 transition-all cursor-pointer"
+                    className="group px-8 py-5 flex items-center justify-between hover:bg-[var(--bg-primary)]/50 transition-all cursor-pointer relative"
                     onClick={() => handleTradeClick(item.symbol)}
                   >
                     <div className="flex items-center gap-5">
@@ -190,6 +190,16 @@ export default function Watchlist() {
                           {(item.change ?? 0) >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
                           {(item.change ?? 0) >= 0 ? '+' : ''}{item.change?.toFixed(2)}%
                         </div>
+                      </div>
+
+                      {/* Quick Action Hovers */}
+                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity absolute right-[4.5rem] bg-[var(--bg-secondary)] pl-4 py-2 rounded-l-xl shadow-[-10px_0_15px_var(--bg-secondary)]">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleTradeClick(item.symbol); }}
+                          className="px-3 py-1.5 text-[10px] font-black bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white rounded-lg transition-colors uppercase"
+                        >
+                          B / S
+                        </button>
                       </div>
 
                       <button
