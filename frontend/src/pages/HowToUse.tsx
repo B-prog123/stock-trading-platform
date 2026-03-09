@@ -23,6 +23,7 @@ import {
   Bookmark
 } from 'lucide-react';
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import TradingViewWidget from '../components/TradingViewWidget';
 
 const candleData = [
   { time: '10:00', open: 150, close: 155, high: 158, low: 149 },
@@ -45,7 +46,7 @@ const chartData = candleData.map((d) => ({
 }));
 
 export default function HowToUse() {
-  const [activeTab, setActiveTab] = useState<'basics' | 'features'>('basics');
+  const [activeTab, setActiveTab] = useState<'basics' | 'features' | 'advanced'>('basics');
 
   return (
     <motion.div
@@ -107,10 +108,16 @@ export default function HowToUse() {
         >
           🚀 Stockify Features
         </button>
+        <button
+          onClick={() => setActiveTab('advanced')}
+          className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'advanced' ? 'bg-indigo-600 text-white shadow-md' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+        >
+          📈 Advanced Graph
+        </button>
       </div>
 
       <AnimatePresence mode="wait">
-        {activeTab === 'basics' ? (
+        {activeTab === 'basics' && (
           <motion.div key="basics" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-6">
 
             {/* The Pizza Slice Experiment */}
@@ -212,7 +219,8 @@ export default function HowToUse() {
             </div>
 
           </motion.div>
-        ) : (
+        )}
+        {activeTab === 'features' && (
           <motion.div key="features" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-6">
 
             <div className="text-center max-w-2xl mx-auto mb-8">
@@ -278,6 +286,68 @@ export default function HowToUse() {
               </div>
 
             </div>
+          </motion.div>
+        )}
+        {activeTab === 'advanced' && (
+          <motion.div key="advanced" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-6">
+
+            <div className="text-center max-w-2xl mx-auto mb-8">
+              <h3 className="text-2xl font-bold text-[var(--text-primary)] mb-2">Mastering the Advanced Graph</h3>
+              <p className="text-sm text-[var(--text-secondary)]">The TradingView Widget is the ultimate tool for technical analysis. Explore its features interactively below.</p>
+            </div>
+
+            {/* Live Interactive Graph */}
+            <div className="rounded-3xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-6 md:p-8 h-[600px] mb-8">
+              <TradingViewWidget symbol="RELIANCE" interval="5" />
+            </div>
+
+            {/* Explanation Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+              <div className="bg-[var(--bg-primary)] border border-[var(--border-color)] p-6 rounded-3xl hover:border-indigo-500/30 transition-colors">
+                <div className="flex items-center gap-3 mb-4 text-indigo-500">
+                  <Clock3 size={24} />
+                  <h4 className="text-lg font-bold">1. Basic Use: Timeframes</h4>
+                </div>
+                <p className="text-sm text-[var(--text-secondary)] mb-3">At the top left, find the timeframe selector (e.g., 1m, 5m, 1D). This changes how much time each candlestick represents.</p>
+                <ul className="text-xs text-[var(--text-muted)] space-y-2 list-disc pl-4">
+                  <li><strong>Short-term (1m-15m):</strong> For day trading and quick moves.</li>
+                  <li><strong>Medium-term (1H-4H):</strong> For swing trading over a few days.</li>
+                  <li><strong>Long-term (1D-1W):</strong> For investing and observing macro trends.</li>
+                </ul>
+                <p className="text-xs mt-3 bg-indigo-500/10 text-indigo-400 p-2 rounded-lg"><strong>Try it:</strong> Change the chart above from 5m to 1D to see Reliance's long-term trend!</p>
+              </div>
+
+              <div className="bg-[var(--bg-primary)] border border-[var(--border-color)] p-6 rounded-3xl hover:border-emerald-500/30 transition-colors">
+                <div className="flex items-center gap-3 mb-4 text-emerald-500">
+                  <LineChart size={24} />
+                  <h4 className="text-lg font-bold">2. Features: Indicators</h4>
+                </div>
+                <p className="text-sm text-[var(--text-secondary)] mb-3">Click the "Indicators" button (looks like a line with a squiggly over it) at the top to add math-based analysis tools.</p>
+                <ul className="text-xs text-[var(--text-muted)] space-y-2 list-disc pl-4">
+                  <li><strong>RSI (Relative Strength Index):</strong> Shows if a stock is overbought (above 70) or oversold (below 30).</li>
+                  <li><strong>MACD:</strong> Shows momentum and trend changes.</li>
+                  <li><strong>Moving Averages (MA):</strong> Smoothes out price action to identify direction.</li>
+                </ul>
+                <p className="text-xs mt-3 bg-emerald-500/10 text-emerald-400 p-2 rounded-lg"><strong>Try it:</strong> Search and add "RSI" to the chart. Is the stock currently overbought?</p>
+              </div>
+
+              <div className="bg-[var(--bg-primary)] border border-[var(--border-color)] p-6 rounded-3xl hover:border-rose-500/30 transition-colors">
+                <div className="flex items-center gap-3 mb-4 text-rose-500">
+                  <MousePointer2 size={24} />
+                  <h4 className="text-lg font-bold">3. Advanced: Drawing Tools</h4>
+                </div>
+                <p className="text-sm text-[var(--text-secondary)] mb-3">The left sidebar is your canvas. Use it to chart your own path and identify psychological market levels.</p>
+                <ul className="text-xs text-[var(--text-muted)] space-y-2 list-disc pl-4">
+                  <li><strong>Trendlines:</strong> Connect the lows of an uptrend to see where buyers step in (Support).</li>
+                  <li><strong>Fibonacci Retracement:</strong> Find hidden levels where price might bounce after a big move.</li>
+                  <li><strong>Compare:</strong> Click '+' at the top to overlay another stock (e.g. NIFTY) to see correlation.</li>
+                </ul>
+                <p className="text-xs mt-3 bg-rose-500/10 text-rose-400 p-2 rounded-lg"><strong>Try it:</strong> Draw a trendline connecting the lowest points on the chart.</p>
+              </div>
+
+            </div>
+
           </motion.div>
         )}
       </AnimatePresence>
