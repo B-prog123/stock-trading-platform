@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import axios from "axios";
+import yahooFinance from "yahoo-finance2";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
@@ -72,17 +73,25 @@ const getNextSipDate = (fromDate: Date, frequency: "WEEKLY" | "MONTHLY") => {
 
 const getCurrentStockPrice = async (symbol: string): Promise<number> => {
   const safeSymbol = symbol.trim().toUpperCase();
+  // Map plain symbols to Yahoo Finance NSE format
+  const yahooSym = safeSymbol === "L&T" ? "LT.NS" : safeSymbol.includes(".") ? safeSymbol : `${safeSymbol}.NS`;
   try {
-    const response = await axios.get("https://query1.finance.yahoo.com/v7/finance/quote", { params: { symbols: safeSymbol }, timeout: 5000 });
-    const price = response?.data?.quoteResponse?.result?.[0]?.regularMarketPrice;
+    const quote = await yahooFinance.quote(yahooSym, {}, { validateResult: false }) as any;
+    const price = quote?.regularMarketPrice;
     if (typeof price === "number" && price > 0) return price;
   } catch (error) {
-    console.error(`Price fallback for ${safeSymbol}:`, error);
+    // Try US symbol as fallback (for non-Indian stocks)
+    try {
+      const quote = await yahooFinance.quote(safeSymbol, {}, { validateResult: false }) as any;
+      const price = quote?.regularMarketPrice;
+      if (typeof price === "number" && price > 0) return price;
+    } catch { /* ignore */ }
+    console.error(`Price fallback for ${safeSymbol}:`, (error as Error).message);
   }
-  return fallbackPrices[safeSymbol] || 100;
+  return fallbackPrices[`${safeSymbol}.NS`] || fallbackPrices[safeSymbol] || 100;
 };
 
-// Batch price cache — 15 second TTL to avoid Yahoo Finance rate limits
+// Batch price cache — 15 second TTL
 const priceCache: Map<string, { price: number; change: number; cachedAt: number }> = new Map();
 const PRICE_CACHE_TTL_MS = 15000;
 
@@ -90,7 +99,6 @@ const getBatchPrices = async (symbols: string[]): Promise<Record<string, { price
   const result: Record<string, { price: number; change: number }> = {};
   const nowMs = Date.now();
 
-  // Separate symbols into cached vs stale
   const toFetch: string[] = [];
   for (const sym of symbols) {
     const upper = sym.trim().toUpperCase();
@@ -103,38 +111,32 @@ const getBatchPrices = async (symbols: string[]): Promise<Record<string, { price
   }
 
   if (toFetch.length > 0) {
-    try {
-      const joined = toFetch.join(",");
-      const response = await axios.get("https://query1.finance.yahoo.com/v7/finance/quote", {
-        params: { symbols: joined },
-        timeout: 8000,
-        headers: { "User-Agent": "Mozilla/5.0" }
-      });
-      const quotes: any[] = response?.data?.quoteResponse?.result || [];
-      for (const q of quotes) {
-        const sym = q.symbol?.toUpperCase();
-        if (!sym) continue;
-        const price = typeof q.regularMarketPrice === "number" && q.regularMarketPrice > 0 ? q.regularMarketPrice : (fallbackPrices[sym] || 100);
-        const change = typeof q.regularMarketChangePercent === "number" ? parseFloat(q.regularMarketChangePercent.toFixed(2)) : 0;
-        priceCache.set(sym, { price, change, cachedAt: nowMs });
-        result[sym] = { price, change };
-      }
-    } catch (err) {
-      console.error("Batch price fetch error:", err);
-    }
-    // Fill any symbols that failed fetch with fallback
-    for (const sym of toFetch) {
-      if (!result[sym]) {
-        const fallback = fallbackPrices[sym] || 100;
-        result[sym] = { price: fallback, change: 0 };
-      }
-    }
+    // yahoo-finance2 quoteSummary doesn't batch easily, use individual quote calls in parallel
+    await Promise.allSettled(
+      toFetch.map(async (sym) => {
+        try {
+          const quote = await yahooFinance.quote(sym, {}, { validateResult: false }) as any;
+          const price = typeof quote?.regularMarketPrice === "number" && quote.regularMarketPrice > 0
+            ? quote.regularMarketPrice
+            : (fallbackPrices[sym] || 100);
+          const change = typeof quote?.regularMarketChangePercent === "number"
+            ? parseFloat(quote.regularMarketChangePercent.toFixed(2))
+            : 0;
+          priceCache.set(sym, { price, change, cachedAt: nowMs });
+          result[sym] = { price, change };
+        } catch {
+          // Use fallback for this symbol
+          const fallback = fallbackPrices[sym] || 100;
+          result[sym] = { price: fallback, change: 0 };
+        }
+      })
+    );
   }
 
   return result;
 };
 
-// Public endpoint — no auth required so the screener/market/dashboard can call it
+// Public endpoint — no auth required
 app.get("/api/prices", async (req, res) => {
   const raw = (req.query.symbols as string) || "";
   const symbols = raw.split(",").map(s => s.trim().toUpperCase()).filter(Boolean);
