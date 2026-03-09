@@ -205,8 +205,8 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Bottom row: Tabs (Scrollable) */}
-      <div className="h-12 flex items-center px-4 lg:px-8 border-t border-[var(--border-color)] bg-[var(--bg-primary)]/50 backdrop-blur-md overflow-x-auto no-scrollbar gap-2">
+      {/* Bottom row: Tabs (Scrollable) - Hidden on Mobile */}
+      <div className="hidden lg:flex h-12 items-center px-4 lg:px-8 border-t border-[var(--border-color)] bg-[var(--bg-primary)]/50 backdrop-blur-md overflow-x-auto no-scrollbar gap-2">
         {navLinks.map(link => (
           <button
             key={link.id}
