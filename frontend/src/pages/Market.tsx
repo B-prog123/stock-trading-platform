@@ -3,7 +3,7 @@ import { Search, TrendingUp, TrendingDown, Clock, BarChart3, Info, Plus, Minus, 
 import { useAuth } from '../App';
 import { motion, AnimatePresence } from 'motion/react';
 import { apiUrl } from '../lib/api';
-import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
+import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
 
 import TradingViewWidget from '../components/TradingViewWidget';
 import { sharedStockData } from './Screener';
@@ -351,22 +351,55 @@ export default function Market() {
                   <TradingViewWidget symbol={selectedStock.symbol} />
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={simpleChartData}>
+                    <AreaChart data={simpleChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                       <defs>
                         <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor={selectedStock.change >= 0 ? '#10b981' : '#f43f5e'} stopOpacity={0.1} />
+                          <stop offset="5%" stopColor={selectedStock.change >= 0 ? '#10b981' : '#f43f5e'} stopOpacity={0.3} />
                           <stop offset="95%" stopColor={selectedStock.change >= 0 ? '#10b981' : '#f43f5e'} stopOpacity={0} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" vertical={false} opacity={0.5} />
-                      <XAxis dataKey="label" stroke="var(--text-muted)" fontSize={10} axisLine={false} tickLine={false} />
-                      <YAxis domain={['auto', 'auto']} stroke="var(--text-muted)" fontSize={10} axisLine={false} tickLine={false} tickFormatter={(val) => `₹${val}`} />
-                      <Tooltip
-                        contentStyle={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)', borderRadius: '12px', color: 'var(--text-primary)', fontSize: '12px', fontWeight: 'bold' }}
-                        itemStyle={{ color: 'var(--text-primary)' }}
+                      <CartesianGrid strokeDasharray="3 3" stroke="currentColor" vertical={false} opacity={0.05} />
+                      <XAxis
+                        dataKey="label"
+                        stroke="var(--text-secondary)"
+                        fontSize={10}
+                        axisLine={false}
+                        tickLine={false}
+                        minTickGap={20}
                       />
-                      <Line type="monotone" dataKey="price" stroke={selectedStock.change >= 0 ? '#10b981' : '#f43f5e'} strokeWidth={3} dot={false} animationDuration={1000} />
-                    </LineChart>
+                      <YAxis
+                        domain={['auto', 'auto']}
+                        stroke="var(--text-secondary)"
+                        fontSize={10}
+                        axisLine={false}
+                        tickLine={false}
+                        tickFormatter={(val) => `₹${val.toLocaleString()}`}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'var(--bg-secondary)',
+                          borderColor: 'var(--border-color)',
+                          borderRadius: '8px',
+                          color: 'var(--text-primary)',
+                          fontSize: '12px',
+                          fontWeight: 'bold',
+                          boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'
+                        }}
+                        itemStyle={{ color: 'var(--text-primary)' }}
+                        formatter={(value: number) => [`₹${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 'Price']}
+                        labelStyle={{ color: 'var(--text-secondary)', marginBottom: '4px', fontWeight: 'normal' }}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="price"
+                        stroke={selectedStock.change >= 0 ? '#10b981' : '#f43f5e'}
+                        strokeWidth={2}
+                        fillOpacity={1}
+                        fill="url(#chartGrad)"
+                        animationDuration={1500}
+                        isAnimationActive={true}
+                      />
+                    </AreaChart>
                   </ResponsiveContainer>
                 )}
               </div>
