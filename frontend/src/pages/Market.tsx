@@ -268,7 +268,7 @@ export default function Market() {
               <button
                 key={stock.symbol}
                 onClick={() => { setSelectedStock(stock); setShowListOnMobile(false); }}
-                className={`w-full px-4 py-4 flex items-center justify-between border-b border-[var(--border-color)] last:border-0 hover:bg-[var(--bg-primary)] transition-all ${selectedStock.symbol === stock.symbol ? 'bg-[var(--bg-primary)] border-l-2 border-l-blue-500' : ''}`}
+                className={`w-full px-4 py-4 flex items-center justify-between border-b border-[var(--border-color)] last:border-0 hover:bg-[var(--bg-primary)] active:bg-[var(--bg-primary)] active:scale-[0.98] transition-all ${selectedStock.symbol === stock.symbol ? 'bg-[var(--bg-primary)] border-l-2 border-l-blue-500' : ''}`}
               >
                 <div className="text-left">
                   <p className="font-bold text-sm text-[var(--text-primary)]">{stock.symbol}</p>
@@ -463,7 +463,7 @@ export default function Market() {
               <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
                 {/* Market Depth / Order Book */}
-                <div className="p-5 rounded-2xl bg-[var(--bg-primary)] border border-[var(--border-color)]">
+                <div className="mobile-card">
                   <div className="flex items-center gap-2 mb-4">
                     <BarChart3 size={16} className="text-violet-500" />
                     <h4 className="text-sm font-bold text-[var(--text-primary)]">Market Depth</h4>
@@ -504,7 +504,7 @@ export default function Market() {
                   </div>
                 </div>
 
-                <div className="p-5 rounded-2xl bg-[var(--bg-primary)] border border-[var(--border-color)] flex flex-col justify-center">
+                <div className="mobile-card flex flex-col justify-center">
                   <div className="flex items-center gap-2 mb-4">
                     <Info size={16} className="text-blue-500" />
                     <h4 className="text-sm font-bold text-[var(--text-primary)]">Asset Fundamental</h4>

@@ -78,6 +78,19 @@
     padding-bottom: env(safe-area-inset-bottom);
   }
 
+  .mobile-card {
+    @apply p-4 rounded-3xl border border-[var(--border-color)] bg-[var(--bg-secondary)] shadow-sm;
+  }
+
+  .touch-active:active {
+    @apply scale-[0.98] transition-transform;
+    background-color: var(--bg-primary);
+  }
+
+  .hide-on-mobile {
+    @apply hidden sm:block;
+  }
+
   .bg-pattern-dots {
     background-image: radial-gradient(var(--text-secondary) 1px, transparent 1px);
     background-size: 24px 24px;

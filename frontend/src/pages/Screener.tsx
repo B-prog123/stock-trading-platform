@@ -58,18 +58,19 @@ export default function Screener() {
                 </div>
             </div>
 
-            <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl overflow-hidden shadow-sm">
-                <div className="overflow-x-auto">
+            <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] sm:rounded-2xl overflow-hidden shadow-sm">
+                {/* Desktop View Table */}
+                <div className="overflow-x-auto hidden sm:block">
                     <table className="w-full text-left text-sm">
-                        <thead className="bg-[var(--bg-primary)] border-b border-[var(--border-color)] text-[var(--text-muted)] font-bold text-xs uppercase tracking-wider">
+                        <thead className="bg-[var(--bg-primary)] border-b border-[var(--border-color)] text-[var(--text-muted)] font-black text-[10px] uppercase tracking-widest">
                             <tr>
-                                <th className="px-6 py-4">Symbol</th>
-                                <th className="px-6 py-4">Price</th>
-                                <th className="px-6 py-4">Change %</th>
-                                <th className="px-6 py-4 hidden sm:table-cell">Volume</th>
-                                <th className="px-6 py-4 hidden md:table-cell">P/E Ratio</th>
-                                <th className="px-6 py-4 hidden lg:table-cell">Sector</th>
-                                <th className="px-6 py-4 text-center">Trade</th>
+                                <th className="px-6 py-5">Symbol</th>
+                                <th className="px-6 py-5">Price</th>
+                                <th className="px-6 py-5">Change %</th>
+                                <th className="px-6 py-5 hidden md:table-cell">Volume</th>
+                                <th className="px-6 py-5 hidden lg:table-cell">P/E Ratio</th>
+                                <th className="px-6 py-5 hidden lg:table-cell">Sector</th>
+                                <th className="px-6 py-5 text-center">Trade</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[var(--border-color)] text-[var(--text-primary)]">
@@ -79,43 +80,75 @@ export default function Screener() {
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ delay: i * 0.03 }}
                                     key={stock.symbol}
-                                    className="hover:bg-[var(--bg-primary)] transition-colors group"
+                                    className="hover:bg-[var(--bg-primary)] transition-colors group cursor-pointer"
+                                    onClick={() => {
+                                        setSelectedSymbol(stock.symbol);
+                                        setActiveTab('market');
+                                    }}
                                 >
-                                    <td className="px-6 py-4">
-                                        <div className="font-bold text-base flex items-center gap-2">
+                                    <td className="px-6 py-5">
+                                        <div className="font-black text-sm flex items-center gap-2 tracking-tight">
                                             {stock.symbol}
                                             {stock.change > 3 && <Zap size={14} className="text-amber-500 fill-amber-500" />}
                                         </div>
-                                        <div className="text-[10px] text-[var(--text-muted)] truncate max-w-[120px]">{stock.name}</div>
+                                        <div className="text-[10px] text-[var(--text-muted)] font-bold truncate max-w-[120px] uppercase tracking-tighter">{stock.name}</div>
                                     </td>
-                                    <td className="px-6 py-4 font-mono font-bold">₹{stock.price.toFixed(2)}</td>
-                                    <td className="px-6 py-4">
-                                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold ${stock.change >= 0 ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'}`}>
+                                    <td className="px-6 py-5 font-mono font-black text-sm">₹{stock.price.toFixed(2)}</td>
+                                    <td className="px-6 py-5">
+                                        <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg text-[10px] font-black ${stock.change >= 0 ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'}`}>
                                             {stock.change > 0 ? '+' : ''}{stock.change.toFixed(2)}%
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 font-mono text-xs hidden sm:table-cell text-[var(--text-secondary)]">{stock.volume}</td>
-                                    <td className="px-6 py-4 font-mono text-xs hidden md:table-cell text-[var(--text-secondary)]">{stock.pe}</td>
-                                    <td className="px-6 py-4 hidden lg:table-cell">
-                                        <span className="px-2.5 py-1 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)] text-xs text-[var(--text-secondary)]">
+                                    <td className="px-6 py-5 font-mono text-xs hidden md:table-cell text-[var(--text-secondary)] font-bold">{stock.volume}</td>
+                                    <td className="px-6 py-5 font-mono text-xs hidden lg:table-cell text-[var(--text-secondary)] font-bold">{stock.pe}</td>
+                                    <td className="px-6 py-5 hidden lg:table-cell">
+                                        <span className="px-3 py-1 rounded-lg bg-[var(--bg-primary)] border border-[var(--border-color)] text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">
                                             {stock.sector}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 text-center">
-                                        <button
-                                            onClick={() => {
-                                                setSelectedSymbol(stock.symbol);
-                                                setActiveTab('market');
-                                            }}
-                                            className="px-4 py-2 rounded-xl bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white transition-all font-bold text-xs"
-                                        >
-                                            Trade
-                                        </button>
+                                    <td className="px-6 py-5 text-center">
+                                        <ArrowRight size={16} className="text-[var(--text-muted)] group-hover:text-blue-500 group-hover:translate-x-1 transition-all mx-auto" />
                                     </td>
                                 </motion.tr>
                             ))}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Mobile View Card List */}
+                <div className="sm:hidden divide-y divide-[var(--border-color)]">
+                    {data.map((stock, i) => (
+                        <motion.div
+                            key={stock.symbol}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: i * 0.05 }}
+                            onClick={() => {
+                                setSelectedSymbol(stock.symbol);
+                                setActiveTab('market');
+                            }}
+                            className="p-5 active:bg-[var(--bg-primary)] transition-colors flex items-center justify-between group"
+                        >
+                            <div className="flex flex-col gap-1">
+                                <div className="flex items-center gap-2">
+                                    <span className="font-black text-base text-[var(--text-primary)] tracking-tight">{stock.symbol}</span>
+                                    {stock.change > 3 && <Zap size={14} className="text-amber-500 fill-amber-500" />}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest px-1.5 py-0.5 bg-[var(--bg-primary)] rounded border border-[var(--border-color)]">{stock.sector}</span>
+                                    <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-tighter truncate max-w-[120px]">{stock.name}</span>
+                                </div>
+                            </div>
+
+                            <div className="text-right">
+                                <div className="font-mono font-black text-sm text-[var(--text-primary)] mb-1">₹{stock.price.toFixed(2)}</div>
+                                <div className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-black ${stock.change >= 0 ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'}`}>
+                                    {stock.up ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+                                    {stock.change > 0 ? '+' : ''}{stock.change.toFixed(2)}%
+                                </div>
+                            </div>
+                        </motion.div>
+                    ))}
                 </div>
             </div>
         </motion.div>

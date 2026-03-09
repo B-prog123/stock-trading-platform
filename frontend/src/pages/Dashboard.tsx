@@ -107,7 +107,7 @@ export default function Dashboard() {
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 pb-10">
 
       {/* ── Hero: Welcome + Phone Mockup ── */}
-      <div className="relative overflow-hidden rounded-[2.5rem] text-white shadow-2xl min-h-[280px] sm:min-h-[320px]"
+      <div className="relative overflow-hidden rounded-[2rem] sm:rounded-[2.5rem] text-white shadow-2xl min-h-[220px] sm:min-h-[320px]"
         style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f766e 100%)' }}>
         {/* Animated orbs */}
         <div className="absolute w-72 h-72 rounded-full opacity-25 -top-16 -left-16"
@@ -171,9 +171,9 @@ export default function Dashboard() {
       </div>
 
       {/* ── Quick Actions ── */}
-      <div className="responsive-container mt-4 mb-2">
+      <div className="responsive-container mt-2 mb-2">
         <h2 className="text-[10px] font-black text-[var(--text-secondary)] uppercase tracking-[0.2em] mb-4 ml-1">Quick Terminals</h2>
-        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-4">
           {quickActions.map((a, i) => (
             <motion.button
               key={a.tab}
