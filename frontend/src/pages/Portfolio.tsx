@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../App';
 import { PortfolioItem, PortfolioAnalysis } from '../types';
-import { Briefcase, TrendingUp, TrendingDown, Brain, Sparkles, PieChart as PieChartIcon, Activity, Wallet, Calendar } from 'lucide-react';
+import { Briefcase, TrendingUp, TrendingDown, Brain, Sparkles, PieChart as PieChartIcon, Activity, Wallet, Calendar, HelpCircle, Info } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { motion } from 'motion/react';
 import { apiUrl } from '../lib/api';
@@ -275,19 +275,19 @@ export default function Portfolio() {
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-6">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <MetricCard title="Total Assets" value={portfolio.length.toString()} subtitle="Unique holdings" icon={<Briefcase className="text-emerald-400" size={20} />} />
+          <MetricCard title="Total Assets" value={portfolio.length.toString()} subtitle="Unique holdings" icon={<Briefcase className="text-emerald-400" size={20} />} tooltip="Number of unique company stocks currently held in your portfolio." />
         </motion.div>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
-          <MetricCard title="Diversification" value={`${diversificationScore}/100`} subtitle={diversificationScore > 70 ? 'Excellent spread' : 'Concentrated risk'} icon={<PieChartIcon className="text-cyan-400" size={20} />} progress={diversificationScore} />
+          <MetricCard title="Diversification" value={`${diversificationScore}/100`} subtitle={diversificationScore > 70 ? 'Excellent spread' : 'Concentrated risk'} icon={<PieChartIcon className="text-cyan-400" size={20} />} progress={diversificationScore} tooltip="A score representing how well your investments are spread across different sectors. A higher score means lower risk." />
         </motion.div>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-          <MetricCard title="Current Value" value={`₹${totalValue.toLocaleString(undefined, { maximumFractionDigits: 1 })}`} subtitle="Live value" icon={<Wallet className="text-emerald-400" size={20} />} />
+          <MetricCard title="Current Value" value={`₹${totalValue.toLocaleString(undefined, { maximumFractionDigits: 1 })}`} subtitle="Live value" icon={<Wallet className="text-emerald-400" size={20} />} tooltip="The estimated total value of all your stocks if you were to sell them right now at current market prices." />
         </motion.div>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
-          <MetricCard title="Total P&L" value={`${totals.profitLoss >= 0 ? '+' : '-'}₹${Math.abs(totals.profitLoss).toLocaleString(undefined, { maximumFractionDigits: 1 })}`} subtitle={`${totals.profitLossPercent >= 0 ? '+' : ''}${totals.profitLossPercent.toFixed(2)}%`} icon={totals.profitLoss >= 0 ? <TrendingUp className="text-emerald-400" size={20} /> : <TrendingDown className="text-red-400" size={20} />} />
+          <MetricCard title="Total P&L" value={`${totals.profitLoss >= 0 ? '+' : '-'}₹${Math.abs(totals.profitLoss).toLocaleString(undefined, { maximumFractionDigits: 1 })}`} subtitle={`${totals.profitLossPercent >= 0 ? '+' : ''}${totals.profitLossPercent.toFixed(2)}%`} icon={totals.profitLoss >= 0 ? <TrendingUp className="text-emerald-400" size={20} /> : <TrendingDown className="text-red-400" size={20} />} tooltip="Total Profit & Loss. This shows how much money you have gained or lost compared to your original invested amount." />
         </motion.div>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="col-span-2 sm:col-span-1">
-          <MetricCard title="SIP Invested" value={`₹${(breakdown.sipInvested || 0).toLocaleString(undefined, { maximumFractionDigits: 1 })}`} subtitle={`Manual: ₹${(breakdown.manualInvested || 0).toLocaleString(undefined, { maximumFractionDigits: 1 })}`} icon={<Activity className="text-cyan-400" size={20} />} />
+          <MetricCard title="SIP Invested" value={`₹${(breakdown.sipInvested || 0).toLocaleString(undefined, { maximumFractionDigits: 1 })}`} subtitle={`Manual: ₹${(breakdown.manualInvested || 0).toLocaleString(undefined, { maximumFractionDigits: 1 })}`} icon={<Activity className="text-cyan-400" size={20} />} tooltip="Shows how much of your capital was invested automatically via SIP vs manual lump-sum orders." />
         </motion.div>
       </div>
 
@@ -335,6 +335,40 @@ export default function Portfolio() {
               <p>No trend data available. Invest to start tracking your performance.</p>
             </div>
           )}
+        </div>
+
+        {/* Educational Section Added Below the Chart */}
+        <div className="mt-8 pt-6 border-t border-[var(--border-color)]">
+          <h4 className="flex items-center gap-2 text-sm font-bold text-[var(--text-primary)] mb-3">
+            <Info size={16} className="text-blue-500" /> How to Read This Information
+          </h4>
+          <div className="text-xs text-[var(--text-secondary)] space-y-4 grid md:grid-cols-2 gap-x-8 gap-y-4">
+            <div>
+              <strong className="text-[var(--text-primary)]">Invested Value vs. Current Value</strong>
+              <p className="mt-1">
+                Your <span className="text-[var(--text-primary)] font-medium">Invested Value</span> is the original amount of money you spent to buy the shares.
+                Your <span className="text-[var(--text-primary)] font-medium">Current Value</span> is what those shares are worth right now based on live market prices.
+              </p>
+            </div>
+            <div>
+              <strong className="text-[var(--text-primary)]">Total P&L (Profit & Loss)</strong>
+              <p className="mt-1">
+                P&L is the difference between your Current Value and your Invested Value. If the number is green (+), you have made a profit. If it is red (-), your stocks are currently worth less than what you paid for them.
+              </p>
+            </div>
+            <div>
+              <strong className="text-[var(--text-primary)]">Performance Trend Chart</strong>
+              <p className="mt-1">
+                This area chart simulates the growth or decline of your total portfolio value over the last 30 days. It helps you visualize whether your assets are generally trending upward or downward.
+              </p>
+            </div>
+            <div>
+              <strong className="text-[var(--text-primary)]">Asset Allocation & Diversification</strong>
+              <p className="mt-1">
+                Diversification means not putting all your eggs in one basket. Spreading your investments across different sectors (like Tech, Energy, and Banking) helps reduce the risk of a single industry causing huge losses.
+              </p>
+            </div>
+          </div>
         </div>
       </motion.div>
 
@@ -524,7 +558,7 @@ export default function Portfolio() {
   );
 }
 
-function MetricCard({ title, value, subtitle, icon, progress }: any) {
+function MetricCard({ title, value, subtitle, icon, progress, tooltip }: any) {
   return (
     <motion.div whileHover={{ y: -5 }} className="glass-card p-6 relative overflow-hidden group h-full">
       <div className="flex justify-between items-start mb-4">
@@ -541,7 +575,18 @@ function MetricCard({ title, value, subtitle, icon, progress }: any) {
         )}
       </div>
       <div>
-        <p className="text-[var(--text-secondary)] text-xs uppercase tracking-widest font-bold mb-1">{title}</p>
+        <div className="flex items-center gap-1">
+          <p className="text-[var(--text-secondary)] text-xs uppercase tracking-widest font-bold mb-1">{title}</p>
+          {tooltip && (
+            <div className="relative group/tooltip mb-1">
+              <HelpCircle size={12} className="text-[var(--text-muted)] hover:text-[var(--text-secondary)] cursor-help" />
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-[var(--bg-secondary)] border border-[var(--border-color)] text-[10px] text-[var(--text-secondary)] rounded-lg shadow-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-50 text-center normal-case tracking-normal">
+                {tooltip}
+                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-[var(--border-color)]" />
+              </div>
+            </div>
+          )}
+        </div>
         <h4 className="text-2xl font-bold font-display text-[var(--text-primary)] break-words">{value}</h4>
         <p className="text-[var(--text-secondary)] text-[10px] mt-1 uppercase tracking-wider">{subtitle}</p>
       </div>

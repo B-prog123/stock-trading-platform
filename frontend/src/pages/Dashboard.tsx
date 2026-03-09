@@ -4,7 +4,7 @@ import { StockRecommendation, PortfolioItem } from '../types';
 import {
   TrendingUp, Brain, Wallet, BarChart3, ArrowUpRight, ArrowDownRight,
   Zap, ShieldCheck, BookOpen, MessageCircle, Star, Play,
-  PieChart, Activity, Award, Globe
+  PieChart, Activity, Award, Globe, Trophy
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -62,7 +62,7 @@ export default function Dashboard() {
     { label: 'My Portfolio', desc: 'View holdings', icon: <PieChart size={20} />, color: 'from-emerald-600 to-teal-600', tab: 'portfolio' },
     { label: 'Start SIP', desc: 'Auto-invest', icon: <Activity size={20} />, color: 'from-violet-600 to-purple-600', tab: 'sip' },
     { label: 'Add Funds', desc: 'Deposit money', icon: <Wallet size={20} />, color: 'from-orange-500 to-pink-500', tab: 'funds' },
-    { label: 'Academy', desc: 'Learn trading', icon: <BookOpen size={20} />, color: 'from-cyan-600 to-blue-600', tab: 'guide' },
+    { label: 'Trading Game', desc: 'Test your skills', icon: <Trophy size={20} />, color: 'from-amber-500 to-yellow-600', tab: 'game' },
     { label: 'Support', desc: 'Get help', icon: <MessageCircle size={20} />, color: 'from-rose-500 to-red-600', tab: 'support' },
   ];
 

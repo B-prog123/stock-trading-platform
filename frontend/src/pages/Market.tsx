@@ -25,6 +25,12 @@ interface SimpleChartPoint {
   price: number;
 }
 
+interface OrderBookEntry {
+  price: number;
+  quantity: number;
+  total: number;
+}
+
 const popularStocks: StockQuote[] = sharedStockData.map(s => ({
   symbol: s.symbol,
   name: s.name,
@@ -44,6 +50,20 @@ const stockMeta: Record<string, StockMeta> = {
   ITC: { marketCap: '5.3T', avgVolume: '14.3M' },
   'L&T': { marketCap: '4.8T', avgVolume: '3.5M' },
 };
+
+function generateOrderBook(basePrice: number, isBuy: boolean): OrderBookEntry[] {
+  return Array.from({ length: 5 }).map((_, i) => {
+    // Buyers want lower prices, Sellers want higher prices
+    const offset = isBuy ? -((i + 1) * 0.05) : ((i + 1) * 0.05);
+    const price = basePrice * (1 + offset / 100);
+    const quantity = Math.floor(Math.random() * 500) + 50;
+    return {
+      price: parseFloat(price.toFixed(2)),
+      quantity,
+      total: Math.floor(price * quantity)
+    };
+  });
+}
 
 const intervalSeeds: Record<string, { labels: string[]; movement: number[] }> = {
   '1': {
@@ -91,6 +111,11 @@ export default function Market() {
   const [graphMode, setGraphMode] = useState<'simple' | 'advanced'>('simple');
   const [showListOnMobile, setShowListOnMobile] = useState(true);
 
+  const [bids, setBids] = useState<OrderBookEntry[]>([]);
+  const [asks, setAsks] = useState<OrderBookEntry[]>([]);
+  const [dayHigh, setDayHigh] = useState(0);
+  const [dayLow, setDayLow] = useState(0);
+
   // ── Real-time Price Fluctuations ──
   useEffect(() => {
     const interval = setInterval(() => {
@@ -111,6 +136,23 @@ export default function Market() {
     const updated = stocks.find(s => s.symbol === selectedStock.symbol);
     if (updated) setSelectedStock(updated);
   }, [stocks]);
+
+  // Update order book rapidly and track high/low
+  useEffect(() => {
+    setDayHigh(selectedStock.price * 1.02);
+    setDayLow(selectedStock.price * 0.98);
+    setBids(generateOrderBook(selectedStock.price, true));
+    setAsks(generateOrderBook(selectedStock.price, false).reverse());
+
+    const obInterval = setInterval(() => {
+      setBids(generateOrderBook(selectedStock.price, true));
+      setAsks(generateOrderBook(selectedStock.price, false).reverse());
+      setDayHigh(prev => Math.max(prev, selectedStock.price));
+      setDayLow(prev => Math.min(prev, selectedStock.price));
+    }, 2000);
+
+    return () => clearInterval(obInterval);
+  }, [selectedStock.symbol, selectedStock.price]);
 
   // Handle external selection (from Watchlist/Dashboard)
   useEffect(() => {
@@ -332,6 +374,48 @@ export default function Market() {
               {/* Trading & Stats Panel */}
               <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
+                {/* Market Depth / Order Book */}
+                <div className="p-5 rounded-2xl bg-[var(--bg-primary)] border border-[var(--border-color)]">
+                  <div className="flex items-center gap-2 mb-4">
+                    <BarChart3 size={16} className="text-violet-500" />
+                    <h4 className="text-sm font-bold text-[var(--text-primary)]">Market Depth</h4>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Bids */}
+                    <div>
+                      <div className="flex justify-between text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-wider mb-2">
+                        <span>Bid</span>
+                        <span>Qty</span>
+                      </div>
+                      <div className="space-y-1.5">
+                        {bids.map((bid, i) => (
+                          <div key={i} className="flex justify-between relative group cursor-pointer overflow-hidden rounded">
+                            <div className="absolute top-0 right-0 bottom-0 bg-emerald-500/10 z-0" style={{ width: `${(bid.quantity / 550) * 100}%` }} />
+                            <span className="text-xs font-mono font-bold text-emerald-500 z-10 pl-1">{bid.price.toFixed(2)}</span>
+                            <span className="text-xs font-mono text-[var(--text-secondary)] z-10 pr-1">{bid.quantity}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Asks */}
+                    <div>
+                      <div className="flex justify-between text-[10px] text-[var(--text-muted)] font-bold uppercase tracking-wider mb-2">
+                        <span>Ask</span>
+                        <span>Qty</span>
+                      </div>
+                      <div className="space-y-1.5">
+                        {asks.map((ask, i) => (
+                          <div key={i} className="flex justify-between relative group cursor-pointer overflow-hidden rounded">
+                            <div className="absolute top-0 left-0 bottom-0 bg-rose-500/10 z-0" style={{ width: `${(ask.quantity / 550) * 100}%` }} />
+                            <span className="text-xs font-mono font-bold text-rose-500 z-10 pl-1">{ask.price.toFixed(2)}</span>
+                            <span className="text-xs font-mono text-[var(--text-secondary)] z-10 pr-1">{ask.quantity}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="p-5 rounded-2xl bg-[var(--bg-primary)] border border-[var(--border-color)] flex flex-col justify-center">
                   <div className="flex items-center gap-2 mb-4">
                     <Info size={16} className="text-blue-500" />
@@ -339,6 +423,14 @@ export default function Market() {
                   </div>
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
+                      <span className="text-xs text-[var(--text-muted)]">Day High / Low</span>
+                      <span className="text-xs font-mono font-bold text-[var(--text-primary)]">{dayHigh.toFixed(2)} / {dayLow.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-[var(--text-muted)]">52W High / Low</span>
+                      <span className="text-xs font-mono font-bold text-[var(--text-primary)]">{(selectedStock.price * 1.4).toFixed(2)} / {(selectedStock.price * 0.6).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center border-t border-[var(--border-color)] pt-3">
                       <span className="text-xs text-[var(--text-muted)]">Market Cap</span>
                       <span className="text-xs font-bold text-[var(--text-primary)]">{stockMeta[selectedStock.symbol]?.marketCap || 'N/A'}</span>
                     </div>
@@ -346,36 +438,32 @@ export default function Market() {
                       <span className="text-xs text-[var(--text-muted)]">Avg Volume</span>
                       <span className="text-xs font-bold text-[var(--text-primary)]">{stockMeta[selectedStock.symbol]?.avgVolume || 'N/A'}</span>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs text-[var(--text-muted)]">Sector</span>
-                      <span className="text-xs font-bold text-blue-500">Equity Market</span>
-                    </div>
                   </div>
                 </div>
 
-                <div className="lg:col-span-2 p-6 rounded-2xl bg-gradient-to-br from-blue-600/5 to-transparent border border-blue-500/20 flex flex-col sm:flex-row items-center justify-between gap-8">
-                  <div className="text-center sm:text-left">
+                <div className="lg:col-span-1 p-6 rounded-2xl bg-gradient-to-br from-blue-600/5 to-transparent border border-blue-500/20 flex flex-col justify-between gap-6">
+                  <div>
                     <h4 className="text-lg font-bold text-[var(--text-primary)] mb-1">Trade Execution</h4>
                     <p className="text-xs text-[var(--text-muted)]">Instant settlement at real-time market rates.</p>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row items-center gap-6 w-full sm:w-auto">
-                    <div className="flex flex-col gap-1 w-full sm:w-auto">
-                      <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider text-center sm:text-left">Shares</span>
+                  <div className="flex flex-col gap-4 w-full">
+                    <div className="flex flex-col gap-1 w-full">
+                      <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Shares</span>
                       <div className="flex items-center gap-3 bg-[var(--bg-primary)] p-1 rounded-xl border border-[var(--border-color)]">
                         <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="p-2 rounded-lg hover:bg-[var(--bg-secondary)] text-[var(--text-primary)]"><Minus size={16} /></button>
-                        <input type="number" value={quantity} onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))} className="w-12 text-center bg-transparent text-sm font-bold focus:outline-none text-[var(--text-primary)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                        <input type="number" value={quantity} onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))} className="w-full text-center bg-transparent text-sm font-bold focus:outline-none text-[var(--text-primary)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
                         <button onClick={() => setQuantity(quantity + 1)} className="p-2 rounded-lg hover:bg-[var(--bg-secondary)] text-[var(--text-primary)]"><Plus size={16} /></button>
                       </div>
                     </div>
 
-                    <div className="flex gap-3 w-full sm:w-auto">
+                    <div className="flex gap-3 w-full">
                       <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} disabled={trading} onClick={() => handleTrade('BUY')}
-                        className="flex-1 sm:flex-none px-10 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 transition-all disabled:opacity-50 min-w-[120px]">
+                        className="flex-1 px-4 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 transition-all disabled:opacity-50">
                         BUY
                       </motion.button>
                       <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} disabled={trading} onClick={() => handleTrade('SELL')}
-                        className="flex-1 sm:flex-none px-10 py-3 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl shadow-lg shadow-rose-600/20 transition-all disabled:opacity-50 min-w-[120px]">
+                        className="flex-1 px-4 py-3 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl shadow-lg shadow-rose-600/20 transition-all disabled:opacity-50">
                         SELL
                       </motion.button>
                     </div>
