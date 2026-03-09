@@ -19,7 +19,7 @@ export const getAIRecommendations = async (): Promise<StockRecommendation[]> => 
   try {
     const ai = getAI();
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.5-flash",
       contents: "Provide 5 stock recommendations for today with brief reasoning and risk score (1-10). Return as JSON array of objects: {symbol, name, reasoning, riskScore, trend: 'bullish'|'bearish'}",
       config: { responseMimeType: "application/json" }
     });
@@ -40,7 +40,7 @@ export const generateMarketNews = async (): Promise<any[]> => {
   try {
     const ai = getAI();
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.5-flash",
       contents: `Generate 5 realistic, detailed, and data-driven Indian stock market (NSE/BSE) news headlines for today (${new Date().toLocaleDateString()}). Each item must sound like professional financial journalism with specific numbers, percentages, or real company names. Each item should have: title, summary, category (e.g., Tech, Finance, Auto, Macro), and sentiment (positive, negative, neutral). Return strictly as a JSON array.`,
       config: { responseMimeType: "application/json" }
     });
@@ -63,8 +63,8 @@ export const analyzePortfolioAI = async (portfolio: PortfolioItem[]): Promise<Po
   try {
     const ai = getAI();
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: `Analyze this stock portfolio and provide health score (1-100) and suggestions: ${JSON.stringify(portfolio)}. Return JSON: {score, analysis, suggestions: []}`,
+      model: "gemini-2.5-flash",
+      contents: `Analyze this stock portfolio and provide health score (1-100) and specific, highly actionable suggestions: ${JSON.stringify(portfolio)}. Return strictly as JSON: {score: number, analysis: string, suggestions: string[]}`,
       config: { responseMimeType: "application/json" }
     });
 
@@ -113,5 +113,51 @@ export const getAIChatResponse = async (message: string, token?: string | null):
   } catch (error) {
     console.error("AI Chat error:", error);
     return "I'm having trouble connecting to my AI brain right now.";
+  }
+};
+
+export const getAIStockInsight = async (
+  symbol: string,
+  currentPrice: number,
+  change: number,
+  high: number,
+  low: number
+): Promise<{ sentiment: string; summary: string }> => {
+  try {
+    const ai = getAI();
+    const prompt = `Act as an expert Wall Street quantitative analyst. I am looking at the stock ${symbol}. 
+Current Price: ₹${currentPrice}
+24h Change: ${change}%
+Day High: ₹${high}
+Day Low: ₹${low}
+
+Give me a quick 2-3 sentence technical and fundamental analysis of this movement. Is this a breakout, a bounce, a correction, or just noise?
+Return ONLY a valid JSON object in this exact format, with no markdown formatting:
+{
+  "sentiment": "bullish" | "bearish" | "neutral",
+  "summary": "Your 2-3 sentence analysis here"
+}`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: { responseMimeType: "application/json" }
+    });
+
+    if (!response.text) {
+      throw new Error("Empty response from AI for stock insight");
+    }
+
+    const parsed = JSON.parse(response.text);
+    return {
+      sentiment: parsed.sentiment || "neutral",
+      summary: parsed.summary || "No clear analysis available at the moment."
+    };
+  } catch (error) {
+    console.error("AI Stock Insight error:", error);
+    return {
+      sentiment: change >= 0 ? "bullish" : "bearish",
+      summary: `AI analysis is currently unavailable. The stock is currently showing a ${change >= 0 ? 'positive' : 'negative'} trend over the last 24 hours.`
+    };
   }
 };

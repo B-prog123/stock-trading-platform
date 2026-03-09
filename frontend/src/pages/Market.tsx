@@ -4,6 +4,7 @@ import { useAuth } from '../App';
 import { motion, AnimatePresence } from 'motion/react';
 import { apiUrl } from '../lib/api';
 import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
+import { getAIStockInsight } from '../services/aiService';
 
 import TradingViewWidget from '../components/TradingViewWidget';
 import { sharedStockData } from './Screener';
@@ -110,6 +111,8 @@ export default function Market() {
   const [isWatchlisted, setIsWatchlisted] = useState(false);
   const [graphMode, setGraphMode] = useState<'simple' | 'advanced'>('simple');
   const [showListOnMobile, setShowListOnMobile] = useState(true);
+  const [aiInsight, setAiInsight] = useState<{ sentiment: string; summary: string } | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
 
   const [bids, setBids] = useState<OrderBookEntry[]>([]);
   const [asks, setAsks] = useState<OrderBookEntry[]>([]);
@@ -161,6 +164,7 @@ export default function Market() {
       if (stock) {
         setSelectedStock(stock);
         setShowListOnMobile(false);
+        setAiInsight(null);
       }
       setSelectedSymbol(null);
     }
@@ -218,6 +222,24 @@ export default function Market() {
         addNotification(`${selectedStock.symbol} ${isWatchlisted ? 'removed from' : 'added to'} watchlist`, 'INFO');
       }
     } catch (err) { console.error('Watchlist toggle error', err); }
+  };
+
+  const fetchAiInsight = async () => {
+    setAiLoading(true);
+    try {
+      const insight = await getAIStockInsight(
+        selectedStock.symbol,
+        selectedStock.price,
+        selectedStock.change,
+        dayHigh,
+        dayLow
+      );
+      setAiInsight(insight);
+    } catch (error) {
+      console.error("Failed to get insight", error);
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   return (
@@ -336,14 +358,47 @@ export default function Market() {
                       Advanced
                     </button>
                   </div>
-                  <div className="hidden sm:flex items-center gap-2 p-1.5 rounded-xl bg-[var(--bg-primary)] border border-[var(--border-color)]">
-                    <Sparkles size={14} className="ml-2 text-emerald-500" />
-                    <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider mr-2">AI Insights</span>
-                    <div className="h-4 w-[1px] bg-[var(--border-color)] mr-2" />
-                    <span className="text-xs font-bold text-emerald-500 pr-2">Bullish</span>
-                  </div>
+                  <button
+                    onClick={fetchAiInsight}
+                    disabled={aiLoading}
+                    className="hidden sm:flex items-center gap-2 p-1.5 rounded-xl bg-[var(--bg-primary)] border border-blue-500/30 hover:bg-blue-500/5 transition-all cursor-pointer group disabled:opacity-50"
+                  >
+                    <Sparkles size={14} className={`ml-2 text-blue-500 ${aiLoading ? 'animate-spin' : 'group-hover:animate-pulse'}`} />
+                    <span className="text-[10px] font-bold text-[var(--text-primary)] uppercase tracking-wider pr-2">
+                      {aiLoading ? 'Analyzing...' : 'Get AI Insight'}
+                    </span>
+                  </button>
                 </div>
               </div>
+
+              {/* AI Insight Card */}
+              <AnimatePresence>
+                {aiInsight && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="mb-6 overflow-hidden"
+                  >
+                    <div className="p-4 rounded-xl border border-[var(--border-color)] bg-gradient-to-br from-blue-500/5 to-transparent relative overflow-hidden group">
+                      <div className="absolute top-0 right-0 p-4 opacity-10"><Sparkles size={64} /></div>
+                      <div className="relative z-10">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h4 className="font-bold text-[var(--text-primary)] text-sm flex items-center gap-2">
+                            <Sparkles size={16} className="text-blue-500" /> AI Quantitative Analysis
+                          </h4>
+                          <span className={`px-2 py-0.5 rounded-[4px] text-[10px] font-black uppercase tracking-widest ${aiInsight.sentiment === 'bullish' ? 'bg-emerald-500/20 text-emerald-500' : aiInsight.sentiment === 'bearish' ? 'bg-rose-500/20 text-rose-500' : 'bg-amber-500/20 text-amber-500'}`}>
+                            {aiInsight.sentiment}
+                          </span>
+                        </div>
+                        <p className="text-xs text-[var(--text-secondary)] leading-relaxed max-w-3xl">
+                          {aiInsight.summary}
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* Chart Area */}
               <div className="h-[300px] sm:h-[450px] w-full bg-[var(--bg-primary)] rounded-2xl border border-[var(--border-color)] p-4 relative overflow-hidden shadow-inner">
