@@ -56,9 +56,17 @@ export default function Transactions() {
   const handleExportCSV = () => {
     if (filteredTransactions.length === 0) return;
 
+    const escapeCSV = (str: string | number) => {
+      const s = String(str);
+      if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+        return `"${s.replace(/"/g, '""')}"`;
+      }
+      return s;
+    };
+
     const headers = ['Asset', 'Type', 'Source', 'Quantity', 'Price', 'Total Value', 'Date'];
     const csvContent = [
-      headers.join(','),
+      headers.map(escapeCSV).join(','),
       ...filteredTransactions.map((t) => [
         t.symbol,
         t.type,
@@ -67,10 +75,11 @@ export default function Transactions() {
         t.price.toFixed(2),
         (t.quantity * t.price).toFixed(2),
         new Date(t.date).toLocaleDateString(),
-      ].join(','))
+      ].map(escapeCSV).join(','))
     ].join('\n');
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+    const blob = new Blob([bom, csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
@@ -121,11 +130,10 @@ export default function Transactions() {
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${
-                filter === f
+              className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${filter === f
                   ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
                   : 'bg-[var(--card-bg)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:bg-[var(--hover-bg)]'
-              }`}
+                }`}
             >
               {f}
             </button>
@@ -137,11 +145,10 @@ export default function Transactions() {
             <button
               key={f}
               onClick={() => setSourceFilter(f)}
-              className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${
-                sourceFilter === f
+              className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${sourceFilter === f
                   ? 'bg-cyan-500 text-black shadow-lg shadow-cyan-500/20'
                   : 'bg-[var(--card-bg)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:bg-[var(--hover-bg)]'
-              }`}
+                }`}
             >
               {f}
             </button>
@@ -183,9 +190,8 @@ export default function Transactions() {
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${
-                            t.type === 'BUY' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'
-                          }`}>
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${t.type === 'BUY' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'
+                            }`}>
                             {t.symbol.substring(0, 2)}
                           </div>
                           <div>
@@ -195,9 +201,8 @@ export default function Transactions() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
-                          t.type === 'BUY' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'
-                        }`}>
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${t.type === 'BUY' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'
+                          }`}>
                           {t.type === 'BUY' ? <ArrowDownLeft size={12} /> : <ArrowUpRight size={12} />}
                           {t.type}
                         </span>
