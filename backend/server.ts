@@ -111,7 +111,6 @@ const getBatchPrices = async (symbols: string[]): Promise<Record<string, { price
   }
 
   if (toFetch.length > 0) {
-    // yahoo-finance2 quoteSummary doesn't batch easily, use individual quote calls in parallel
     await Promise.allSettled(
       toFetch.map(async (sym) => {
         try {
@@ -119,13 +118,21 @@ const getBatchPrices = async (symbols: string[]): Promise<Record<string, { price
           const price = typeof quote?.regularMarketPrice === "number" && quote.regularMarketPrice > 0
             ? quote.regularMarketPrice
             : (fallbackPrices[sym] || 100);
-          const change = typeof quote?.regularMarketChangePercent === "number"
-            ? parseFloat(quote.regularMarketChangePercent.toFixed(2))
-            : 0;
+
+          // Compute change% from price vs previous close — most reliable approach
+          // yahoo-finance2 returns regularMarketChangePercent as decimal (0.012 = 1.2%)
+          let change = 0;
+          const prevClose = quote?.regularMarketPreviousClose;
+          if (typeof prevClose === "number" && prevClose > 0) {
+            change = parseFloat(((price - prevClose) / prevClose * 100).toFixed(2));
+          } else if (typeof quote?.regularMarketChangePercent === "number") {
+            // Multiply by 100 because yahoo-finance2 returns as decimal fraction
+            change = parseFloat((quote.regularMarketChangePercent * 100).toFixed(2));
+          }
+
           priceCache.set(sym, { price, change, cachedAt: nowMs });
           result[sym] = { price, change };
         } catch {
-          // Use fallback for this symbol
           const fallback = fallbackPrices[sym] || 100;
           result[sym] = { price: fallback, change: 0 };
         }
