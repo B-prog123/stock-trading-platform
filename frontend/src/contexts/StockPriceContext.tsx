@@ -3,7 +3,7 @@ import { apiUrl } from '../lib/api';
 
 export interface LivePrice {
     price: number;
-    change: number;
+    change: number; // percentage
 }
 
 type PriceMap = Record<string, LivePrice>;
@@ -11,85 +11,143 @@ type PriceMap = Record<string, LivePrice>;
 interface StockPriceContextValue {
     prices: PriceMap;
     lastUpdated: Date | null;
+    source: 'finnhub' | 'backend' | 'fallback';
 }
 
-const StockPriceContext = createContext<StockPriceContextValue>({ prices: {}, lastUpdated: null });
+const StockPriceContext = createContext<StockPriceContextValue>({
+    prices: {},
+    lastUpdated: null,
+    source: 'fallback',
+});
 
-// All symbols the app tracks by default (Indian NIFTY 50 stocks)
+// All 10 Indian NSE stocks tracked by the app
 export const ALL_SYMBOLS = [
     'RELIANCE', 'TCS', 'HDFCBANK', 'INFY', 'ICICIBANK',
     'SBIN', 'WIPRO', 'ADANIENT', 'ITC', 'L&T',
 ];
 
-// Yahoo Finance uses .NS suffix for NSE-listed Indian stocks
-const toYahooSymbol = (s: string) => {
-    if (s === 'L&T') return 'LT.NS';
-    return `${s}.NS`;
+// Fallback realistic prices (used if all APIs fail)
+const FALLBACK: PriceMap = {
+    RELIANCE: { price: 2950.25, change: 1.25 },
+    TCS: { price: 4120.64, change: -0.41 },
+    HDFCBANK: { price: 1450.13, change: 2.82 },
+    INFY: { price: 1680.72, change: 0.85 },
+    ICICIBANK: { price: 1050.22, change: -0.12 },
+    SBIN: { price: 780.42, change: 1.15 },
+    WIPRO: { price: 452.10, change: -0.90 },
+    ADANIENT: { price: 3100.50, change: 4.56 },
+    ITC: { price: 430.15, change: 0.45 },
+    'L&T': { price: 3450.80, change: 1.80 },
 };
 
-const POLL_INTERVAL_MS = 15000; // 15 seconds
+const FINNHUB_SYMBOL = (s: string) =>
+    s === 'L&T' ? 'NSE:LT' : `NSE:${s}`;
+
+const BACKEND_SYMBOL = (s: string) =>
+    s === 'L&T' ? 'LT.NS' : `${s}.NS`;
+
+const POLL_MS = 30000; // 30 seconds
+
+// ─── Fetch via Finnhub (browser → Finnhub directly, CORS-enabled) ───────────
+async function fetchViaFinnhub(apiKey: string): Promise<{ map: PriceMap; ok: boolean }> {
+    const map: PriceMap = {};
+    try {
+        const results = await Promise.allSettled(
+            ALL_SYMBOLS.map(async (sym) => {
+                const res = await fetch(
+                    `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(FINNHUB_SYMBOL(sym))}&token=${apiKey}`,
+                    { signal: AbortSignal.timeout(8000) }
+                );
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                // c = current, o = open, pc = previous close, dp = change %
+                const price: number = data.c ?? 0;
+                const prevClose: number = data.pc ?? 0;
+                if (price <= 0) throw new Error('No price');
+                const change = prevClose > 0
+                    ? parseFloat(((price - prevClose) / prevClose * 100).toFixed(2))
+                    : parseFloat((data.dp ?? 0).toFixed(2));
+                map[sym] = { price, change };
+            })
+        );
+        const successes = results.filter(r => r.status === 'fulfilled').length;
+        return { map, ok: successes >= 5 }; // at least half succeeded
+    } catch {
+        return { map, ok: false };
+    }
+}
+
+// ─── Fetch via backend (backend → yahoo-finance2) ────────────────────────────
+async function fetchViaBackend(): Promise<{ map: PriceMap; ok: boolean }> {
+    const map: PriceMap = {};
+    try {
+        const symbols = ALL_SYMBOLS.map(BACKEND_SYMBOL).join(',');
+        const res = await fetch(apiUrl(`/api/prices?symbols=${encodeURIComponent(symbols)}`), {
+            signal: AbortSignal.timeout(10000),
+        });
+        if (!res.ok) return { map, ok: false };
+        const data: Record<string, { price: number; change: number }> = await res.json();
+        for (const sym of ALL_SYMBOLS) {
+            const entry = data[BACKEND_SYMBOL(sym)];
+            if (entry && entry.price > 0) {
+                map[sym] = { price: entry.price, change: entry.change };
+            }
+        }
+        const ok = Object.keys(map).length >= 5;
+        return { map, ok };
+    } catch {
+        return { map, ok: false };
+    }
+}
 
 export function StockPriceProvider({ children }: { children: React.ReactNode }) {
-    const [prices, setPrices] = useState<PriceMap>({});
+    const [prices, setPrices] = useState<PriceMap>(FALLBACK);
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-    // Track "open" price (first fetch) per symbol so we can compute % change from day-start
-    const openPrices = useRef<Record<string, number>>({});
+    const [source, setSource] = useState<'finnhub' | 'backend' | 'fallback'>('fallback');
+    const finnhubKey = import.meta.env.VITE_FINNHUB_KEY as string | undefined;
 
     const fetchPrices = async () => {
-        try {
-            const yahooSymbols = ALL_SYMBOLS.map(toYahooSymbol);
-            const params = yahooSymbols.join(',');
-            const res = await fetch(apiUrl(`/api/prices?symbols=${encodeURIComponent(params)}`));
-            if (!res.ok) return;
-            const data: Record<string, { price: number; change: number }> = await res.json();
-
-            // Map Yahoo symbols back to our app symbols
-            const mapped: PriceMap = {};
-            for (const appSym of ALL_SYMBOLS) {
-                const yahooSym = toYahooSymbol(appSym);
-                const entry = data[yahooSym] ?? data[appSym];
-                if (!entry) continue;
-                // Store open price on first fetch
-                if (!openPrices.current[appSym]) {
-                    openPrices.current[appSym] = entry.price;
-                }
-                // If Yahoo returns a real change %, use it; otherwise compute from open
-                const change = entry.change !== 0
-                    ? entry.change
-                    : openPrices.current[appSym] > 0
-                        ? parseFloat((((entry.price - openPrices.current[appSym]) / openPrices.current[appSym]) * 100).toFixed(2))
-                        : 0;
-                mapped[appSym] = { price: entry.price, change };
-            }
-
-            if (Object.keys(mapped).length > 0) {
-                setPrices(prev => ({ ...prev, ...mapped }));
+        // 1. Try Finnhub first (most reliable, runs in browser, no Render dependency)
+        if (finnhubKey) {
+            const { map, ok } = await fetchViaFinnhub(finnhubKey);
+            if (ok) {
+                setPrices(prev => ({ ...prev, ...map }));
                 setLastUpdated(new Date());
+                setSource('finnhub');
+                return;
             }
-        } catch (err) {
-            console.warn('StockPriceContext: fetch error', err);
         }
+
+        // 2. Fall back to backend (yahoo-finance2 via Render)
+        const { map, ok } = await fetchViaBackend();
+        if (ok) {
+            setPrices(prev => ({ ...prev, ...map }));
+            setLastUpdated(new Date());
+            setSource('backend');
+            return;
+        }
+
+        // 3. Keep existing prices (FALLBACK already loaded as default state)
+        setSource('fallback');
     };
 
     useEffect(() => {
         fetchPrices();
-        const id = setInterval(fetchPrices, POLL_INTERVAL_MS);
+        const id = setInterval(fetchPrices, POLL_MS);
         return () => clearInterval(id);
     }, []);
 
     return (
-        <StockPriceContext.Provider value={{ prices, lastUpdated }}>
+        <StockPriceContext.Provider value={{ prices, lastUpdated, source }}>
             {children}
         </StockPriceContext.Provider>
     );
 }
 
-/** Returns live prices from the shared context */
 export function usePrices() {
     return useContext(StockPriceContext);
 }
 
-/** Helper: merge live prices into a static stock list */
 export function mergePrices<T extends { symbol: string; price: number; change: number }>(
     staticList: T[],
     prices: PriceMap
