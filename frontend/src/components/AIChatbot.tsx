@@ -19,6 +19,8 @@ const SUGGESTED_QUESTIONS = [
   'When should I buy or sell?',
   'What is RSI indicator?',
   'Explain NIFTY 50 index',
+  'Is Apple (AAPL) a good buy?',
+  'Show me Tesla (TSLA) details',
 ];
 
 // Smart local fallback so chatbot always works even without backend
@@ -74,6 +76,18 @@ const LOCAL_KNOWLEDGE_BASE: { keywords: string[]; answer: string }[] = [
   {
     keywords: ['funds', 'deposit', 'add money', 'balance', 'wallet'],
     answer: '**Adding Funds:**\n\n1. Click on the **Funds tab**\n2. Enter the amount you want to add\n3. Funds are instantly credited to your trading balance\n\nYour available balance is shown on the Dashboard as **Available Margin**. \n\nWhen you buy stocks, balance decreases. When you sell, it increases automatically.'
+  },
+  {
+    keywords: ['aapl', 'apple', 'iphone'],
+    answer: '**Apple Inc. (AAPL):**\n\n🍎 **Sector:** Technology / Consumer Electronics\n💰 **Market Cap:** ~$3T\n\n**Analysis:**\nApple is a global leader in tech. It\'s often seen as a "safe haven" stock due to its massive cash reserves and ecosystem lock-in.\n\n**Key Metrics:**\n- High profit margins\n- Consistent dividend payer\n- Significant focus on Services revenue'
+  },
+  {
+    keywords: ['tsla', 'tesla', 'musk', 'ev'],
+    answer: '**Tesla, Inc. (TSLA):**\n\n⚡ **Sector:** Automotive / Clean Energy\n🏎️ **Focus:** Electric Vehicles, Solar, AI\n\n**Analysis:**\nTesla is a high-growth, high-volatility stock. It leads the EV market but faces increasing competition and macroeconomic sensitivity.'
+  },
+  {
+    keywords: ['nvda', 'nvidia', 'gpu', 'ai chip'],
+    answer: '**NVIDIA Corporation (NVDA):**\n\n🤖 **Sector:** Semiconductors / AI\n🎮 **Major Products:** H100/A100 GPUs, RTX Series\n\n**Analysis:**\nNVIDIA is the primary beneficiary of the AI boom. Its hardware powers almost all major AI models (ChatGPT, Gemini, etc.). Extremely high growth but trades at a premium valuation.'
   },
 ];
 
@@ -188,8 +202,8 @@ export default function AIChatbot() {
             {/* Header */}
             <div className="shrink-0 px-5 py-4 flex items-center justify-between bg-gradient-to-r from-blue-600 via-blue-500 to-emerald-500">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center shadow-inner">
-                  <Bot className="text-white" size={18} />
+                <div className="w-10 h-10 bg-white/30 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-lg border border-white/20">
+                  <Bot className="text-white" size={20} strokeWidth={2.5} />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
@@ -233,9 +247,9 @@ export default function AIChatbot() {
                   )}
                   <div className={`max-w-[82%] flex flex-col gap-1 ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                     <div
-                      className={`px-4 py-3 rounded-2xl text-[13px] leading-relaxed whitespace-pre-wrap ${msg.role === 'user'
-                          ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-br-none shadow-lg shadow-blue-600/20'
-                          : 'bg-[var(--bg-primary)] text-[var(--text-primary)] rounded-bl-none border border-[var(--border-color)]'
+                      className={`px-4 py-3 rounded-2xl text-[13px] leading-relaxed whitespace-pre-wrap shadow-sm transition-all ${msg.role === 'user'
+                        ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-br-none'
+                        : 'bg-[var(--bg-primary)] text-[var(--text-primary)] rounded-bl-none border border-[var(--border-color)] hover:border-blue-500/30'
                         }`}
                     >
                       {renderText(msg.text)}

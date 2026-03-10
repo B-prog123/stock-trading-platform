@@ -100,6 +100,13 @@ export const sharedStockData = [
     { symbol: 'PVRINOX', name: 'PVR INOX Ltd.', price: 1850.60, change: -1.25, volume: '1.8M', sector: 'Media', pe: '68.4' },
     { symbol: 'INDIGRID', name: 'IndiGrid InvIT', price: 165.80, change: 0.85, volume: '2.4M', sector: 'Infra Trust', pe: 'N/A' },
     { symbol: 'INDUSTOWER', name: 'Indus Towers', price: 420.45, change: 1.95, volume: '8.2M', sector: 'Telecom', pe: '22.6' },
+    // ─── US Global Stocks ──────────────────────────────────────────────────────
+    { symbol: 'AAPL', name: 'Apple Inc.', price: 182.63, change: 0.45, volume: '52.4M', sector: 'Technology', pe: '28.2' },
+    { symbol: 'TSLA', name: 'Tesla, Inc.', price: 202.64, change: -1.24, volume: '85.2M', sector: 'Auto', pe: '45.8' },
+    { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 726.13, change: 2.85, volume: '42.1M', sector: 'IT', pe: '95.4' },
+    { symbol: 'MSFT', name: 'Microsoft Corp.', price: 409.72, change: 0.12, volume: '22.8M', sector: 'IT', pe: '36.5' },
+    { symbol: 'GOOGL', name: 'Alphabet Inc.', price: 147.22, change: -0.85, volume: '28.4M', sector: 'IT', pe: '25.4' },
+    { symbol: 'AMZN', name: 'Amazon.com Inc.', price: 174.42, change: 1.25, volume: '31.2M', sector: 'Retail', pe: '62.1' },
 ];
 
 export default function Screener() {
@@ -173,8 +180,8 @@ export default function Screener() {
                     {['All', 'Banking', 'IT', 'Finance', 'Pharma', 'Auto', 'FMCG', 'Energy', 'Metal', 'Real Estate', 'Defence', 'Telecom', 'Fintech', 'Chemicals', 'Conglomerate'].map(s => (
                         <button key={s} onClick={() => setSectorFilter(s)}
                             className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap shrink-0 border ${sectorFilter === s
-                                    ? 'bg-blue-600 text-white border-transparent'
-                                    : 'border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-blue-500/50 bg-[var(--bg-secondary)]'
+                                ? 'bg-blue-600 text-white border-transparent'
+                                : 'border-[var(--border-color)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-blue-500/50 bg-[var(--bg-secondary)]'
                                 }`}
                         >{s}</button>
                     ))}

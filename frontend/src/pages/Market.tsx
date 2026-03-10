@@ -51,6 +51,12 @@ const stockMeta: Record<string, StockMeta> = {
   ADANIENT: { marketCap: '3.5T', avgVolume: '12.1M' },
   ITC: { marketCap: '5.3T', avgVolume: '14.3M' },
   'L&T': { marketCap: '4.8T', avgVolume: '3.5M' },
+  AAPL: { marketCap: '2.82T', avgVolume: '52.4M' },
+  TSLA: { marketCap: '644B', avgVolume: '85.2M' },
+  NVDA: { marketCap: '1.79T', avgVolume: '42.1M' },
+  MSFT: { marketCap: '3.04T', avgVolume: '22.8M' },
+  GOOGL: { marketCap: '1.84T', avgVolume: '28.4M' },
+  AMZN: { marketCap: '1.81T', avgVolume: '31.2M' },
 };
 
 function generateOrderBook(basePrice: number, isBuy: boolean): OrderBookEntry[] {

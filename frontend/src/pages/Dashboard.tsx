@@ -63,16 +63,15 @@ export default function Dashboard() {
     { label: 'My Portfolio', desc: 'View holdings', icon: <PieChart size={20} />, color: 'from-emerald-600 to-teal-600', tab: 'portfolio' },
     { label: 'Start SIP', desc: 'Auto-invest', icon: <Activity size={20} />, color: 'from-violet-600 to-purple-600', tab: 'sip' },
     { label: 'Add Funds', desc: 'Deposit money', icon: <Wallet size={20} />, color: 'from-orange-500 to-pink-500', tab: 'funds' },
-    { label: 'Trading Game', desc: 'Test your skills', icon: <Trophy size={20} />, color: 'from-amber-500 to-yellow-600', tab: 'game' },
     { label: 'Support', desc: 'Get help', icon: <MessageCircle size={20} />, color: 'from-rose-500 to-red-600', tab: 'support' },
   ];
 
   const [marketMovers, setMarketMovers] = useState([
+    { symbol: 'AAPL', name: 'Apple Inc.', price: 182.63, change: 0.45, up: true },
     { symbol: 'RELIANCE', name: 'Reliance Industries', price: 2834.00, change: 1.2, up: true },
+    { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 726.13, change: 2.85, up: true },
     { symbol: 'TCS', name: 'Tata Consultancy', price: 3920.00, change: 0.8, up: true },
-    { symbol: 'INFY', name: 'Infosys Ltd', price: 1756.00, change: -0.4, up: false },
-    { symbol: 'HDFCBANK', name: 'HDFC Bank', price: 1618.00, change: 0.6, up: true },
-    { symbol: 'WIPRO', name: 'Wipro Ltd', price: 452.00, change: -0.9, up: false },
+    { symbol: 'TSLA', name: 'Tesla, Inc.', price: 202.64, change: -1.24, up: false },
   ]);
 
   const features = [
