@@ -10,6 +10,18 @@ function TradingViewWidget({ symbol, interval = '1' }: TradingViewWidgetProps) {
   const container = useRef<HTMLDivElement>(null);
   const { theme } = useAuth();
 
+  const getTradingViewSymbol = (s: string) => {
+    const usStocks = ['AAPL', 'TSLA', 'NVDA', 'MSFT', 'GOOGL', 'AMZN'];
+    if (usStocks.includes(s.toUpperCase())) {
+      // US stocks usually work best with NASDAQ: or NYSE: but plain symbol often works too.
+      // For these specific ones, they are all on NASDAQ except AMZN (NASDAQ) too.
+      return `NASDAQ:${s.toUpperCase()}`;
+    }
+    // Default to NSE for Indian stocks as it's the primary exchange
+    const nseSym = s === 'L&T' ? 'LT' : s.toUpperCase();
+    return `NSE:${nseSym}`;
+  };
+
   useEffect(() => {
     let isMounted = true;
     const currentContainer = container.current;
@@ -32,7 +44,7 @@ function TradingViewWidget({ symbol, interval = '1' }: TradingViewWidgetProps) {
 
     const config = {
       "autosize": true,
-      "symbol": `BSE:${symbol}`,
+      "symbol": getTradingViewSymbol(symbol),
       "interval": interval,
       "timezone": "Asia/Kolkata",
       "theme": theme || "dark",
