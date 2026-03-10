@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, LineChart, Briefcase, Bookmark, History, Newspaper, BookOpen, Wallet, Repeat2, Activity, Trophy } from 'lucide-react';
+import { LayoutDashboard, LineChart, Briefcase, Bookmark, History, Newspaper, BookOpen, Wallet, Repeat2, Activity } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface MobileNavProps {
@@ -12,11 +12,11 @@ export default function MobileNav({ activeTab, setActiveTab }: MobileNavProps) {
     { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
     { id: 'market', label: 'Market', icon: LineChart },
     { id: 'screener', label: 'Screen', icon: Activity },
-    { id: 'funds', label: 'Funds', icon: Wallet },
-    { id: 'sip', label: 'SIP', icon: Repeat2 },
     { id: 'portfolio', label: 'Portfolio', icon: Briefcase },
     { id: 'watchlist', label: 'Watch', icon: Bookmark },
-    { id: 'game', label: 'Game', icon: Trophy },
+    { id: 'sip', label: 'SIP', icon: Repeat2 },
+    { id: 'transactions', label: 'Orders', icon: History },
+    { id: 'funds', label: 'Funds', icon: Wallet },
     { id: 'support', label: 'Help', icon: BookOpen },
   ];
 

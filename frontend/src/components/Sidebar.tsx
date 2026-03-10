@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, LineChart, Briefcase, Bookmark, Wallet, History, Newspaper, BookOpen, Repeat2, X, Activity, Trophy } from 'lucide-react';
+import { LayoutDashboard, LineChart, Briefcase, Bookmark, Wallet, History, Newspaper, BookOpen, Repeat2, X, Activity } from 'lucide-react';
 import { useAuth } from '../App';
 import { motion } from 'motion/react';
 
@@ -24,7 +24,7 @@ export default function Sidebar({ activeTab, setActiveTab, isMobile = false, onC
     { id: 'portfolio', label: 'Portfolio', icon: Briefcase },
     { id: 'watchlist', label: 'Watchlist', icon: Bookmark },
     { id: 'transactions', label: 'Transactions', icon: History },
-    { id: 'game', label: 'Trading Game', icon: Trophy },
+
   ];
 
   return (

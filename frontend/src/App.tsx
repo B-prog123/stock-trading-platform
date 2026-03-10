@@ -20,7 +20,7 @@ import AIChatbot from './components/AIChatbot';
 import Tutorial from './components/Tutorial';
 import Support from './pages/Support';
 import Auth from './pages/Auth';
-import TradingGame from './pages/TradingGame';
+// TradingGame removed
 import { motion, AnimatePresence } from 'motion/react';
 import { X } from 'lucide-react';
 import { apiUrl } from './lib/api';
@@ -306,7 +306,7 @@ export default function App() {
                   {activeTab === 'profile-settings' && <ProfileSettings />}
                   {activeTab === 'preferences' && <Preferences />}
                   {activeTab === 'support' && <Support />}
-                  {activeTab === 'game' && <TradingGame />}
+
                 </motion.div>
               </AnimatePresence>
 

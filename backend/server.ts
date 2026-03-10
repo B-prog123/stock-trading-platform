@@ -639,7 +639,14 @@ app.delete("/api/alerts/:id", authenticateToken, async (req: any, res) => {
   res.json({ success: true });
 });
 
-app.post("/api/ai/chat", authenticateToken, async (req: any, res) => {
+app.post("/api/ai/chat", async (req: any, res) => {
+  // Optional auth — chatbot works for all users
+  const authHeader = req.headers["authorization"];
+  if (authHeader) {
+    const tkn = authHeader.split(" ")[1];
+    try { jwt.verify(tkn, JWT_SECRET, (err: any, user: any) => { if (!err) req.user = user; }); } catch { /* ignore */ }
+  }
+
   const { message } = req.body;
   if (typeof message !== "string" || !message.trim()) return res.status(400).json({ error: "Message is required" });
 
