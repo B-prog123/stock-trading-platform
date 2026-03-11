@@ -13,8 +13,8 @@ interface CustomAdvancedChartProps {
 
 const CustomAdvancedChart: React.FC<CustomAdvancedChartProps> = ({ symbol, interval, theme }) => {
     const chartContainerRef = useRef<HTMLDivElement>(null);
-    const chartRef = useRef<IChartApi | null>(null);
-    const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
+    const chartRef = useRef<any>(null);
+    const seriesRef = useRef<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -61,7 +61,7 @@ const CustomAdvancedChart: React.FC<CustomAdvancedChartProps> = ({ symbol, inter
                     style: 2,
                 },
             },
-        });
+        }) as any;
 
         const candlestickSeries = chart.addCandlestickSeries({
             upColor: '#22c55e',
