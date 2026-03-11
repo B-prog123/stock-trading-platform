@@ -21,32 +21,29 @@ const CustomAdvancedChart: React.FC<CustomAdvancedChartProps> = ({ symbol, inter
     useEffect(() => {
         if (!chartContainerRef.current) return;
 
-        const handleResize = () => {
-            if (chartRef.current && chartContainerRef.current) {
-                chartRef.current.applyOptions({ width: chartContainerRef.current.clientWidth });
-            }
-        };
-
         const isDark = theme === 'dark';
+        const textColor = isDark ? '#94a3b8' : '#64748b';
+        const borderColor = isDark ? '#334155' : '#e2e8f0';
+        const gridColor = isDark ? 'rgba(30, 41, 59, 0.5)' : 'rgba(226, 232, 240, 0.5)';
 
         const chart = createChart(chartContainerRef.current, {
             layout: {
                 background: { type: ColorType.Solid, color: 'transparent' },
-                textColor: isDark ? '#94a3b8' : '#64748b',
+                textColor: textColor,
             },
             grid: {
-                vertLines: { color: isDark ? 'rgba(30, 41, 59, 0.5)' : 'rgba(226, 232, 240, 0.5)' },
-                horzLines: { color: isDark ? 'rgba(30, 41, 59, 0.5)' : 'rgba(226, 232, 240, 0.5)' },
+                vertLines: { color: gridColor },
+                horzLines: { color: gridColor },
             },
-            width: chartContainerRef.current.clientWidth,
+            width: chartContainerRef.current.clientWidth || 600,
             height: 400,
             timeScale: {
-                borderColor: isDark ? '#334155' : '#e2e8f0',
+                borderColor: borderColor,
                 timeVisible: true,
                 secondsVisible: false,
             },
             rightPriceScale: {
-                borderColor: isDark ? '#334155' : '#e2e8f0',
+                borderColor: borderColor,
             },
             crosshair: {
                 mode: 0,
@@ -74,11 +71,20 @@ const CustomAdvancedChart: React.FC<CustomAdvancedChartProps> = ({ symbol, inter
         chartRef.current = chart;
         seriesRef.current = candlestickSeries;
 
-        window.addEventListener('resize', handleResize);
+        const resizeObserver = new ResizeObserver(entries => {
+            if (entries.length === 0 || !chartRef.current) return;
+            const { width, height } = entries[0].contentRect;
+            chartRef.current.applyOptions({ width, height: 400 });
+            chartRef.current.timeScale().fitContent();
+        });
+
+        resizeObserver.observe(chartContainerRef.current);
 
         return () => {
-            window.removeEventListener('resize', handleResize);
+            resizeObserver.disconnect();
             chart.remove();
+            chartRef.current = null;
+            seriesRef.current = null;
         };
     }, [theme]);
 
@@ -87,7 +93,7 @@ const CustomAdvancedChart: React.FC<CustomAdvancedChartProps> = ({ symbol, inter
             setLoading(true);
             setError(null);
             try {
-                const response = await axios.get(`${apiUrl}/api/historical`, {
+                const response = await axios.get(apiUrl('/api/historical'), {
                     params: { symbol, interval }
                 });
 

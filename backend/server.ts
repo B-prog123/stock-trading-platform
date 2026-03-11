@@ -1,7 +1,47 @@
 import express from "express";
 import cors from "cors";
 import axios from "axios";
-import yahooFinance from "yahoo-finance2";
+
+// ─── Yahoo Finance Helpers (Direct Fetch) ───────────────────────────────────
+// We use custom fetchers to avoid issues with library-specific validation/config.
+const YAHOO_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
+
+async function fetchYahooQuote(symbol: string) {
+  try {
+    const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}`;
+    const res = await axios.get(url, { headers: { "User-Agent": YAHOO_UA } });
+    if (!res.data?.quoteResponse?.result?.[0]) return null;
+    return res.data.quoteResponse.result[0];
+  } catch (err) {
+    console.warn(`Direct quote fetch failed for ${symbol}:`, (err as any).message);
+    return null;
+  }
+}
+
+async function fetchYahooChart(symbol: string, period1: number, period2: number, interval: string) {
+  try {
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?period1=${period1}&period2=${period2}&interval=${interval}`;
+    const res = await axios.get(url, { headers: { "User-Agent": YAHOO_UA } });
+    const result = res.data?.chart?.result?.[0];
+    if (!result || !result.timestamp) return null;
+
+    const timestamps = result.timestamp;
+    const quotes = result.indicators.quote[0];
+    const data = timestamps.map((timestamp: number, i: number) => ({
+      date: new Date(timestamp * 1000),
+      open: quotes.open[i],
+      high: quotes.high[i],
+      low: quotes.low[i],
+      close: quotes.close[i],
+    })).filter((d: any) => d.close != null && d.open != null);
+
+    return data;
+  } catch (err) {
+    console.warn(`Direct chart fetch failed for ${symbol}:`, (err as any).message);
+    return null;
+  }
+}
+
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
@@ -152,16 +192,18 @@ const getCurrentStockPrice = async (symbol: string): Promise<number> => {
     if (price > 0) return price;
   } catch { /* fall through */ }
 
-  // 2. Fall back to yahoo-finance2
+  // 2. Fall back to Yahoo Finance direct fetch
   try {
     const yahooSym = safeSymbol === "L&T" ? "LT.NS" : safeSymbol.includes(".") ? safeSymbol : `${safeSymbol}.NS`;
-    const quote = await yahooFinance.quote(yahooSym, {}, { validateResult: false }) as any;
+    const quote = await fetchYahooQuote(yahooSym);
     const price: number = quote?.regularMarketPrice ?? 0;
     if (price > 0) return price;
   } catch { /* fall through */ }
 
   return fallbackPrices[`${safeSymbol}.NS`] || fallbackPrices[safeSymbol] || 100;
 };
+
+type PriceData = { symbol: string; price: number; change: number };
 
 // ─── Batch price fetch for /api/prices endpoint ────────────────────────────
 const getBatchPrices = async (symbols: string[]): Promise<Record<string, { price: number; change: number }>> => {
@@ -186,12 +228,12 @@ const getBatchPrices = async (symbols: string[]): Promise<Record<string, { price
     console.warn("NSE India fetch failed:", (err as Error).message);
   }
 
-  // Attempt 2: yahoo-finance2 (parallel per-symbol)
-  console.log("⚠️  Falling back to yahoo-finance2");
+  // Attempt 2: Yahoo Finance direct fetch (parallel per-symbol)
+  console.log("⚠️  Falling back to Yahoo Finance direct fetch");
   await Promise.allSettled(
     symbols.filter(s => !result[s]).map(async (sym) => {
       try {
-        const quote = await yahooFinance.quote(sym, {}, { validateResult: false }) as any;
+        const quote = await fetchYahooQuote(sym);
         const price: number = quote?.regularMarketPrice ?? 0;
         if (price <= 0) throw new Error("no price");
         const prevClose: number = quote?.regularMarketPreviousClose ?? 0;
@@ -222,54 +264,65 @@ app.get("/api/prices", async (req, res) => {
 
 // ─── /api/historical endpoint ──────────────────────────────────────────────
 app.get("/api/historical", async (req, res) => {
-  const { symbol, interval = "1d" } = req.query;
+  const { symbol, interval = "1" } = req.query;
   if (!symbol) return res.status(400).json({ error: "Symbol is required" });
 
   const safeSymbol = String(symbol).trim().toUpperCase();
-  const yahooSym = safeSymbol === "L&T" ? "LT.NS" : safeSymbol.includes(".") ? safeSymbol : `${safeSymbol}.NS`;
+  const usStocks = ["AAPL", "TSLA", "NVDA", "MSFT", "GOOGL", "AMZN", "META", "NFLX"];
+  let yahooSym = safeSymbol;
 
-  // Map frontend intervals (1, 5, 15, 60, D, W, M) to Yahoo Finance intervals
-  // 1m, 2m, 5m, 15m, 30m, 60m, 90m, 1h, 1d, 5d, 1wk, 1mo, 3mo
-  const intervalMap: Record<string, any> = {
-    "1": "1m",
-    "5": "5m",
-    "15": "15m",
-    "60": "60m",
-    "D": "1d",
-    "W": "1wk",
-    "M": "1mo",
+  if (safeSymbol === "L&T") {
+    yahooSym = "LT.NS";
+  } else if (!safeSymbol.includes(".") && !usStocks.includes(safeSymbol)) {
+    yahooSym = `${safeSymbol}.NS`;
+  }
+
+  // Map frontend intervals from Market.tsx: ['1', 'W', 'M', '12M', '60M']
+  const intervalMap: Record<string, string> = {
+    "1": "15m",  // 1 Day view -> 15m candles
+    "W": "1h",   // 1 Week view -> 1h candles
+    "M": "1d",   // 1 Month view -> 1d candles
+    "12M": "1wk", // 1 Year view -> 1wk candles
+    "60M": "1mo", // 5 Year view -> 1mo candles
   };
 
-  const period2 = new Date();
-  const period1 = new Date();
-
-  // Set timeframe based on interval
   const timeframe = intervalMap[String(interval)] || "1d";
-  if (timeframe.includes("m")) period1.setDate(period1.getDate() - 7); // 7 days for intraday
-  else if (timeframe === "1d") period1.setMonth(period1.getMonth() - 6); // 6 months for daily
-  else period1.setFullYear(period1.getFullYear() - 2); // 2 years for week/month
+  const p2 = Math.floor(Date.now() / 1000);
+  const p1_date = new Date();
+
+  if (interval === "1") p1_date.setDate(p1_date.getDate() - 7);
+  else if (interval === "W") p1_date.setDate(p1_date.getDate() - 30);
+  else if (interval === "M") p1_date.setMonth(p1_date.getMonth() - 6);
+  else if (interval === "12M") p1_date.setFullYear(p1_date.getFullYear() - 2);
+  else if (interval === "60M") p1_date.setFullYear(p1_date.getFullYear() - 10);
+  else p1_date.setMonth(p1_date.getMonth() - 1);
+
+  const p1 = Math.floor(p1_date.getTime() / 1000);
+
+  console.log(`Direct fetching chart for ${yahooSym} | Interval: ${interval} -> ${timeframe}`);
 
   try {
-    const result = await yahooFinance.historical(yahooSym, {
-      period1: toISODate(period1),
-      period2: toISODate(period2),
-      interval: timeframe,
-    });
+    const data = await fetchYahooChart(yahooSym, p1, p2, timeframe);
 
-    // Convert to format suitable for lightweight-charts
-    const chartData = (result as any[]).map((d: any) => ({
+    if (!data || data.length === 0) {
+      console.warn(`No data returned for ${yahooSym}`);
+      return res.json([]);
+    }
+
+    const chartData = data.map((d: any) => ({
       time: Math.floor(new Date(d.date).getTime() / 1000),
       open: d.open,
       high: d.high,
       low: d.low,
       close: d.close,
-      value: d.close, // Fallback for line series
-    })).filter((d: any) => d.close != null);
+    }));
 
+    chartData.sort((a: any, b: any) => a.time - b.time);
+    console.log(`!!!! REBORN SUCCESS !!!! Sent ${chartData.length} data points for ${yahooSym}`);
     res.json(chartData);
-  } catch (error) {
-    console.error(`Historical fetch failed for ${yahooSym}:`, error);
-    res.status(500).json({ error: "Failed to fetch historical data" });
+  } catch (error: any) {
+    console.error(`Chart fetch failed for ${yahooSym}:`, error);
+    res.status(500).json({ error: "Failed to fetch historical data", details: error.message });
   }
 });
 
