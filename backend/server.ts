@@ -262,6 +262,15 @@ app.get("/api/prices", async (req, res) => {
   res.json(prices);
 });
 
+app.get("/api/probe", (req, res) => {
+  res.json({
+    status: "online",
+    version: "1.2.0",
+    engine: "direct-fetch",
+    timestamp: new Date().toISOString()
+  });
+});
+
 // ─── /api/historical endpoint ──────────────────────────────────────────────
 app.get("/api/historical", async (req, res) => {
   const { symbol, interval = "1" } = req.query;
