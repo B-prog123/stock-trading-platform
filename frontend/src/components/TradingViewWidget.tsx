@@ -4,21 +4,30 @@ import { useAuth } from '../App';
 interface TradingViewWidgetProps {
   symbol: string;
   interval?: string;
+  exchange?: string;
 }
 
-function TradingViewWidget({ symbol, interval = '1' }: TradingViewWidgetProps) {
+function TradingViewWidget({ symbol, interval = '1', exchange }: TradingViewWidgetProps) {
   const container = useRef<HTMLDivElement>(null);
   const { theme } = useAuth();
 
   const getTradingViewSymbol = (s: string) => {
-    const usStocks = ['AAPL', 'TSLA', 'NVDA', 'MSFT', 'GOOGL', 'AMZN'];
-    if (usStocks.includes(s.toUpperCase())) {
-      // US stocks usually work best with NASDAQ: or NYSE: but plain symbol often works too.
-      // For these specific ones, they are all on NASDAQ except AMZN (NASDAQ) too.
-      return `NASDAQ:${s.toUpperCase()}`;
+    const sym = s.toUpperCase();
+
+    // If exchange is explicitly provided, use it
+    if (exchange) {
+      return `${exchange.toUpperCase()}:${sym}`;
     }
-    // Default to NSE for Indian stocks as it's the primary exchange
-    const nseSym = s === 'L&T' ? 'LT' : s.toUpperCase();
+
+    // Fallback logic for various exchanges
+    const usStocks = ['AAPL', 'TSLA', 'NVDA', 'MSFT', 'GOOGL', 'AMZN', 'META', 'NFLX'];
+    if (usStocks.includes(sym)) {
+      return `NASDAQ:${sym}`;
+    }
+
+    // Default for Indian stocks if no exchange provided
+    // Ensure "L&T" maps to "LT" if that's what TradingView expects on NSE
+    const nseSym = sym === 'L&T' ? 'LT' : sym;
     return `NSE:${nseSym}`;
   };
 

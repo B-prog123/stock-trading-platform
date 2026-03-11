@@ -402,7 +402,7 @@ export default function Market() {
               {/* Chart Area */}
               <div className="h-[300px] sm:h-[450px] w-full bg-[var(--bg-primary)] rounded-2xl border border-[var(--border-color)] p-4 relative overflow-hidden shadow-inner">
                 {graphMode === 'advanced' ? (
-                  <TradingViewWidget symbol={selectedStock.symbol} />
+                  <TradingViewWidget symbol={selectedStock.symbol} exchange={(selectedStock as any).exchange} />
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={simpleChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
