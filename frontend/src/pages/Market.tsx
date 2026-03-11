@@ -6,7 +6,7 @@ import { apiUrl } from '../lib/api';
 import { ResponsiveContainer, AreaChart, Area, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
 import { getAIStockInsight } from '../services/aiService';
 
-import TradingViewWidget from '../components/TradingViewWidget';
+import CustomAdvancedChart from '../components/CustomAdvancedChart';
 import { sharedStockData } from './Screener';
 import { usePrices, mergePrices } from '../contexts/StockPriceContext';
 
@@ -107,7 +107,7 @@ function buildSimpleChartData(basePrice: number, interval: string): SimpleChartP
 }
 
 export default function Market() {
-  const { token, refreshUser, selectedSymbol, setSelectedSymbol, addNotification, logout } = useAuth();
+  const { token, refreshUser, selectedSymbol, setSelectedSymbol, addNotification, logout, theme } = useAuth();
   const [search, setSearch] = useState('');
   const [stocks, setStocks] = useState<StockQuote[]>(popularStocks);
   const [selectedStock, setSelectedStock] = useState<StockQuote>(popularStocks[0]);
@@ -402,7 +402,7 @@ export default function Market() {
               {/* Chart Area */}
               <div className="h-[300px] sm:h-[450px] w-full bg-[var(--bg-primary)] rounded-2xl border border-[var(--border-color)] p-4 relative overflow-hidden shadow-inner">
                 {graphMode === 'advanced' ? (
-                  <TradingViewWidget symbol={selectedStock.symbol} exchange={(selectedStock as any).exchange} />
+                  <CustomAdvancedChart symbol={selectedStock.symbol} interval={chartInterval} theme={theme} />
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={simpleChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>

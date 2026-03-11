@@ -220,6 +220,59 @@ app.get("/api/prices", async (req, res) => {
   res.json(prices);
 });
 
+// ─── /api/historical endpoint ──────────────────────────────────────────────
+app.get("/api/historical", async (req, res) => {
+  const { symbol, interval = "1d" } = req.query;
+  if (!symbol) return res.status(400).json({ error: "Symbol is required" });
+
+  const safeSymbol = String(symbol).trim().toUpperCase();
+  const yahooSym = safeSymbol === "L&T" ? "LT.NS" : safeSymbol.includes(".") ? safeSymbol : `${safeSymbol}.NS`;
+
+  // Map frontend intervals (1, 5, 15, 60, D, W, M) to Yahoo Finance intervals
+  // 1m, 2m, 5m, 15m, 30m, 60m, 90m, 1h, 1d, 5d, 1wk, 1mo, 3mo
+  const intervalMap: Record<string, any> = {
+    "1": "1m",
+    "5": "5m",
+    "15": "15m",
+    "60": "60m",
+    "D": "1d",
+    "W": "1wk",
+    "M": "1mo",
+  };
+
+  const period2 = new Date();
+  const period1 = new Date();
+
+  // Set timeframe based on interval
+  const timeframe = intervalMap[String(interval)] || "1d";
+  if (timeframe.includes("m")) period1.setDate(period1.getDate() - 7); // 7 days for intraday
+  else if (timeframe === "1d") period1.setMonth(period1.getMonth() - 6); // 6 months for daily
+  else period1.setFullYear(period1.getFullYear() - 2); // 2 years for week/month
+
+  try {
+    const result = await yahooFinance.historical(yahooSym, {
+      period1: toISODate(period1),
+      period2: toISODate(period2),
+      interval: timeframe,
+    });
+
+    // Convert to format suitable for lightweight-charts
+    const chartData = (result as any[]).map((d: any) => ({
+      time: Math.floor(new Date(d.date).getTime() / 1000),
+      open: d.open,
+      high: d.high,
+      low: d.low,
+      close: d.close,
+      value: d.close, // Fallback for line series
+    })).filter((d: any) => d.close != null);
+
+    res.json(chartData);
+  } catch (error) {
+    console.error(`Historical fetch failed for ${yahooSym}:`, error);
+    res.status(500).json({ error: "Failed to fetch historical data" });
+  }
+});
+
 const UserSchema = new Schema({ email: { type: String, unique: true, required: true }, password: { type: String, required: true }, name: { type: String, required: true }, balance: { type: Number, default: 10000 } }, { timestamps: true });
 const PortfolioSchema = new Schema({ userId: { type: Schema.Types.ObjectId, ref: "User", required: true }, symbol: { type: String, required: true }, quantity: { type: Number, required: true }, avgPrice: { type: Number, required: true } }, { timestamps: true });
 PortfolioSchema.index({ userId: 1, symbol: 1 }, { unique: true });
