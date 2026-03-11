@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "start": "tsx server.js"
+    "start": "tsx server.ts"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
@@ -18,7 +18,7 @@
     "mongodb-memory-server": "^11.0.1",
     "mongoose": "^8.23.0",
     "stock-trading-platform": "file:..",
-    "yahoo-finance2": "^3.13.2"
+    "tsx": "^4.21.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
