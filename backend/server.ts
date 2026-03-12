@@ -65,10 +65,12 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 const gemini = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : null;
 
 let isUsingMemoryDB = false;
-if (!MONGODB_URI || MONGODB_URI.includes("<username>") || MONGODB_URI.includes("<password>")) {
+if (!process.env.VERCEL && (!MONGODB_URI || MONGODB_URI.includes("<username>") || MONGODB_URI.includes("<password>"))) {
   console.warn("⚠️  MONGODB_URI is missing or contains placeholder values.");
   console.warn("⚠️  Starting in-memory MongoDB database for fallback operations.");
   isUsingMemoryDB = true;
+} else if (process.env.VERCEL && (!MONGODB_URI || MONGODB_URI.includes("<username>"))) {
+  console.error("❌ CRITICAL: MONGODB_URI is missing on Vercel. Connections will fail.");
 }
 
 const normalizeOrigin = (value: string) => value.trim().replace(/\/$/, "");
@@ -781,20 +783,32 @@ async function startServer() {
     finalUri = mongoServer.getUri();
   }
 
-  await mongoose.connect(finalUri);
-  console.log(`✅ Connected to ${isUsingMemoryDB ? 'in-memory ' : ''}MongoDB database successfully.`);
+  if (finalUri && !finalUri.includes("<username>")) {
+    await mongoose.connect(finalUri);
+    console.log(`✅ Connected to ${isUsingMemoryDB ? 'in-memory ' : ''}MongoDB database successfully.`);
+  }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`🚀 API server running on http://localhost:${PORT}`);
-  });
-  await processDueSips();
-  setInterval(() => processDueSips(), 60 * 1000);
+  if (!process.env.VERCEL) {
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`🚀 API server running on http://localhost:${PORT}`);
+    });
+    await processDueSips();
+    setInterval(() => processDueSips(), 60 * 1000);
+  }
+}
+
+// In serverless environments, we export the app and handle DB connection inside the request or via a warm-up.
+// For Vercel, we'll try to connect once.
+if (process.env.VERCEL) {
+  mongoose.connect(MONGODB_URI).catch(err => console.error("Vercel DB Connect Error:", err));
 }
 
 startServer().catch((error) => {
   console.error("Failed to start server:", error);
-  process.exit(1);
+  if (!process.env.VERCEL) process.exit(1);
 });
+
+export default app;
 
 
 
