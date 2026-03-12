@@ -4,13 +4,14 @@ import axios from "axios";
 import yahooFinance from 'yahoo-finance2';
 
 try {
-  yahooFinance.suppressNotices(['yahooSurvey']);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (yahooFinance as any).suppressNotices(['yahooSurvey']);
 } catch(e) { /* ignore */ }
 
 // ─── Yahoo Finance Helpers (yahoo-finance2) ───────────────────────────────────
-async function fetchYahooQuote(symbol: string) {
+async function fetchYahooQuote(symbol: string): Promise<any> {
   try {
-    const quote = await yahooFinance.quote(symbol);
+    const quote = await (yahooFinance as any).quote(symbol);
     return quote;
   } catch (err: any) {
     console.warn(`yahoo-finance2 quote fetch failed for ${symbol}:`, err.message);
@@ -25,16 +26,16 @@ async function fetchYahooChart(symbol: string, period1: number, period2: number,
       period2: new Date(period2 * 1000),
       interval: interval
     };
-    const result = await yahooFinance.chart(symbol, queryOptions);
+    const result: any = await (yahooFinance as any).chart(symbol, queryOptions);
     if (!result || !result.quotes || result.quotes.length === 0) return null;
 
-    return result.quotes.map(q => ({
+    return result.quotes.map((q: any) => ({
       date: q.date,
       open: q.open,
       high: q.high,
       low: q.low,
       close: q.close
-    })).filter(d => d.close != null && d.open != null);
+    })).filter((d: any) => d.close != null && d.open != null);
   } catch (err: any) {
     console.warn(`yahoo-finance2 chart fetch failed for ${symbol}:`, err.message);
     return null;
@@ -323,15 +324,15 @@ app.get("/api/historical", async (req, res) => {
 });
 
 const UserSchema = new Schema({ email: { type: String, unique: true, required: true }, password: { type: String, required: true }, name: { type: String, required: true }, balance: { type: Number, default: 10000 } }, { timestamps: true });
-const PortfolioSchema = new Schema({ userId: { type: Schema.Types.ObjectId, ref: "User", required: true }, symbol: { type: String, required: true }, quantity: { type: Number, required: true }, avgPrice: { type: Number, required: true } }, { timestamps: true });
+const PortfolioSchema = new Schema({ userId: { type: Types.ObjectId, ref: "User", required: true }, symbol: { type: String, required: true }, quantity: { type: Number, required: true }, avgPrice: { type: Number, required: true } }, { timestamps: true });
 PortfolioSchema.index({ userId: 1, symbol: 1 }, { unique: true });
-const WatchlistSchema = new Schema({ userId: { type: Schema.Types.ObjectId, ref: "User", required: true }, symbol: { type: String, required: true } }, { timestamps: true });
+const WatchlistSchema = new Schema({ userId: { type: Types.ObjectId, ref: "User", required: true }, symbol: { type: String, required: true } }, { timestamps: true });
 WatchlistSchema.index({ userId: 1, symbol: 1 }, { unique: true });
-const AlertSchema = new Schema({ userId: { type: Schema.Types.ObjectId, ref: "User", required: true }, symbol: { type: String, required: true }, targetPrice: { type: Number, required: true }, type: { type: String, enum: ["ABOVE", "BELOW"], required: true }, active: { type: Boolean, default: true } }, { timestamps: true });
-const TransactionSchema = new Schema({ userId: { type: Schema.Types.ObjectId, ref: "User", required: true }, symbol: { type: String, required: true }, quantity: { type: Number, required: true }, price: { type: Number, required: true }, type: { type: String, enum: ["BUY", "SELL"], required: true }, source: { type: String, enum: ["MANUAL", "SIP"], default: "MANUAL" }, sipOrderId: { type: Schema.Types.ObjectId, ref: "SipOrder" }, date: { type: Date, default: Date.now } }, { timestamps: true });
-const SipOrderSchema = new Schema({ userId: { type: Schema.Types.ObjectId, ref: "User", required: true }, stockSymbol: { type: String, required: true }, investmentAmount: { type: Number, required: true }, frequency: { type: String, enum: ["WEEKLY", "MONTHLY"], required: true }, startDate: { type: String, required: true }, endDate: { type: String, default: null }, totalInvested: { type: Number, default: 0 }, totalShares: { type: Number, default: 0 }, status: { type: String, enum: ["ACTIVE", "PAUSED", "CANCELLED", "COMPLETED"], default: "ACTIVE" }, nextRunDate: { type: String, default: null }, lastExecutedAt: { type: String, default: null } }, { timestamps: true });
-const SipExecutionSchema = new Schema({ sipId: { type: Schema.Types.ObjectId, ref: "SipOrder", required: true }, userId: { type: Schema.Types.ObjectId, ref: "User", required: true }, stockSymbol: { type: String, required: true }, scheduledDate: { type: String, required: true }, executedAt: { type: Date, default: Date.now }, price: Number, amount: Number, shares: Number, status: { type: String, enum: ["SUCCESS", "FAILED"], required: true }, error: { type: String, default: null } }, { timestamps: true });
-const SipNotificationSchema = new Schema({ userId: { type: Schema.Types.ObjectId, ref: "User", required: true }, sipId: { type: Schema.Types.ObjectId, ref: "SipOrder" }, type: { type: String, enum: ["EXECUTED", "COMPLETED", "FAILED"], required: true }, message: { type: String, required: true }, read: { type: Boolean, default: false }, createdAt: { type: Date, default: Date.now } });
+const AlertSchema = new Schema({ userId: { type: Types.ObjectId, ref: "User", required: true }, symbol: { type: String, required: true }, targetPrice: { type: Number, required: true }, type: { type: String, enum: ["ABOVE", "BELOW"], required: true }, active: { type: Boolean, default: true } }, { timestamps: true });
+const TransactionSchema = new Schema({ userId: { type: Types.ObjectId, ref: "User", required: true }, symbol: { type: String, required: true }, quantity: { type: Number, required: true }, price: { type: Number, required: true }, type: { type: String, enum: ["BUY", "SELL"], required: true }, source: { type: String, enum: ["MANUAL", "SIP"], default: "MANUAL" }, sipOrderId: { type: Types.ObjectId, ref: "SipOrder" }, date: { type: Date, default: Date.now } }, { timestamps: true });
+const SipOrderSchema = new Schema({ userId: { type: Types.ObjectId, ref: "User", required: true }, stockSymbol: { type: String, required: true }, investmentAmount: { type: Number, required: true }, frequency: { type: String, enum: ["WEEKLY", "MONTHLY"], required: true }, startDate: { type: String, required: true }, endDate: { type: String, default: null }, totalInvested: { type: Number, default: 0 }, totalShares: { type: Number, default: 0 }, status: { type: String, enum: ["ACTIVE", "PAUSED", "CANCELLED", "COMPLETED"], default: "ACTIVE" }, nextRunDate: { type: String, default: null }, lastExecutedAt: { type: String, default: null } }, { timestamps: true });
+const SipExecutionSchema = new Schema({ sipId: { type: Types.ObjectId, ref: "SipOrder", required: true }, userId: { type: Types.ObjectId, ref: "User", required: true }, stockSymbol: { type: String, required: true }, scheduledDate: { type: String, required: true }, executedAt: { type: Date, default: Date.now }, price: Number, amount: Number, shares: Number, status: { type: String, enum: ["SUCCESS", "FAILED"], required: true }, error: { type: String, default: null } }, { timestamps: true });
+const SipNotificationSchema = new Schema({ userId: { type: Types.ObjectId, ref: "User", required: true }, sipId: { type: Types.ObjectId, ref: "SipOrder" }, type: { type: String, enum: ["EXECUTED", "COMPLETED", "FAILED"], required: true }, message: { type: String, required: true }, read: { type: Boolean, default: false }, createdAt: { type: Date, default: Date.now } });
 
 const User = mongoose.model("User", UserSchema);
 const Portfolio = mongoose.model("Portfolio", PortfolioSchema);
