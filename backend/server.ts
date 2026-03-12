@@ -1,10 +1,10 @@
 import express from "express";
 import cors from "cors";
 import axios from "axios";
-import yahooFinance from 'yahoo-finance2';
+import yahooFinanceConstructor from 'yahoo-finance2';
+const yahooFinance = new (yahooFinanceConstructor as any)();
 
 try {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (yahooFinance as any).suppressNotices(['yahooSurvey']);
 } catch(e) { /* ignore */ }
 
