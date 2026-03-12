@@ -197,36 +197,34 @@ type PriceData = { symbol: string; price: number; change: number };
 // ─── Batch price fetch for /api/prices endpoint ────────────────────────────
 const getBatchPrices = async (symbols: string[]): Promise<Record<string, { price: number; change: number }>> => {
   const result: Record<string, { price: number; change: number }> = {};
+  console.log(`[API] getBatchPrices for ${symbols.length} symbols: ${symbols.slice(0, 5).join(', ')}...`);
 
-  // Attempt 1: NSE India (fetches all NIFTY 50 in one call)
+  // Attempt 1: NSE India
   try {
     const nseMap = await fetchNseNifty50();
     for (const sym of symbols) {
-      // sym may be "RELIANCE.NS" — strip .NS for NSE lookup
       const appSym = sym.replace(/\.NS$/i, "").toUpperCase();
       const nseSym = toNseSymbol(appSym);
       if (nseMap[nseSym]) {
-        result[sym] = nseMap[nseSym]; // key matches what frontend sent
+        result[sym] = nseMap[nseSym];
       }
     }
     if (Object.keys(result).length >= Math.floor(symbols.length * 0.7)) {
-      console.log(`✅ NSE prices fetched for ${Object.keys(result).length}/${symbols.length} symbols`);
+      console.log(`[API] ✅ NSE prices fetched: ${Object.keys(result).length}/${symbols.length}`);
+      if (result['RELIANCE.NS']) console.log(`[API] RELIANCE.NS (NSE): ${result['RELIANCE.NS'].price}`);
       return result;
     }
   } catch (err) {
-    console.warn("NSE India fetch failed:", (err as Error).message);
+    console.warn("[API] NSE India fetch failed:", (err as Error).message);
   }
 
   // Attempt 2: Yahoo Finance BATCH fetch
   const remaining = symbols.filter(s => !result[s]);
   if (remaining.length > 0) {
     try {
-      console.log(`📡 Fetching ${remaining.length} symbols via Yahoo Finance Batch...`);
+      console.log(`[API] 📡 Fetching ${remaining.length} symbols via Yahoo Finance Batch...`);
       const quotes: any[] = await (yahooFinance as any).quote(remaining);
-      
-      // Ensure quotes is an array (individual quote returns an object, batch returns an array)
       const quoteList = Array.isArray(quotes) ? quotes : [quotes];
-      
       for (const quote of quoteList) {
         if (!quote) continue;
         const sym = quote.symbol;
@@ -239,8 +237,10 @@ const getBatchPrices = async (symbols: string[]): Promise<Record<string, { price
           result[sym] = { price, change };
         }
       }
+      if (result['RELIANCE.NS']) console.log(`[API] RELIANCE.NS (Yahoo): ${result['RELIANCE.NS'].price}`);
+      if (result['RELIANCE']) console.log(`[API] RELIANCE (Yahoo): ${result['RELIANCE'].price}`);
     } catch (err: any) {
-      console.warn(`Yahoo Batch Quote failed:`, err.message);
+      console.warn(`[API] Yahoo Batch Quote failed:`, err.message);
     }
   }
 

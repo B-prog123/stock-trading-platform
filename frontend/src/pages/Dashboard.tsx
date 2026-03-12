@@ -67,11 +67,11 @@ export default function Dashboard() {
   ];
 
   const [marketMovers, setMarketMovers] = useState([
-    { symbol: 'AAPL', name: 'Apple Inc.', price: 182.63, change: 0.45, up: true },
-    { symbol: 'RELIANCE', name: 'Reliance Industries', price: 2834.00, change: 1.2, up: true },
-    { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 726.13, change: 2.85, up: true },
-    { symbol: 'TCS', name: 'Tata Consultancy', price: 3920.00, change: 0.8, up: true },
-    { symbol: 'TSLA', name: 'Tesla, Inc.', price: 202.64, change: -1.24, up: false },
+    { symbol: 'AAPL', name: 'Apple Inc.', price: 0, change: 0, up: true },
+    { symbol: 'RELIANCE', name: 'Reliance Industries', price: 0, change: 0, up: true },
+    { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 0, change: 0, up: true },
+    { symbol: 'TCS', name: 'Tata Consultancy', price: 0, change: 0, up: true },
+    { symbol: 'TSLA', name: 'Tesla, Inc.', price: 0, change: 0, up: false },
   ]);
 
   const features = [
