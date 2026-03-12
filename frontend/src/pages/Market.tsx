@@ -400,7 +400,7 @@ export default function Market() {
               </AnimatePresence>
 
               {/* Chart Area */}
-              <div className="h-[300px] sm:h-[450px] w-full bg-[var(--bg-primary)] rounded-2xl border border-[var(--border-color)] p-4 relative overflow-hidden shadow-inner">
+              <div className="h-[500px] w-full bg-[var(--bg-primary)] rounded-2xl border border-[var(--border-color)] relative overflow-hidden shadow-inner">
                 {graphMode === 'advanced' ? (
                   <CustomAdvancedChart symbol={selectedStock.symbol} interval={chartInterval} theme={theme} />
                 ) : (

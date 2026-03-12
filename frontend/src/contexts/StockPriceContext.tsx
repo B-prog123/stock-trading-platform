@@ -20,17 +20,31 @@ const StockPriceContext = createContext<StockPriceContextValue>({
     source: 'fallback',
 });
 
-// All 10 Indian NSE stocks tracked by the app
+// ─── Symbols ────────────────────────────────────────────────────────────────
+const US_STOCKS = ['AAPL', 'TSLA', 'NVDA', 'MSFT', 'GOOGL', 'AMZN'];
+
 export const ALL_SYMBOLS = [
-    'RELIANCE', 'TCS', 'HDFCBANK', 'INFY', 'ICICIBANK',
-    'SBIN', 'WIPRO', 'ADANIENT', 'ITC', 'L&T',
+    // NSE Stocks
+    'RELIANCE', 'TCS', 'HDFCBANK', 'INFY', 'ICICIBANK', 'SBIN', 'WIPRO', 'ADANIENT', 'ITC', 'L&T',
+    'BAJFINANCE', 'BHARTIARTL', 'ASIANPAINT', 'HCLTECH', 'MARUTI', 'KOTAKBANK', 'AXISBANK', 'TATAMOTORS',
+    'HINDUNILVR', 'SUNPHARMA', 'ULTRACEMCO', 'NTPC', 'POWERGRID', 'ONGC', 'NESTLEIND', 'TITAN', 'TECHM',
+    'GRASIM', 'TATASTEEL', 'JSWSTEEL', 'HINDALCO', 'INDUSINDBK', 'DIVISLAB', 'CIPLA', 'DRREDDY', 'APOLLOHOSP',
+    'ADANIPORTS', 'ADANIGREEN', 'ADANIPOWER', 'TATAPOWER',
+    'BAJAJFINSV', 'PIDILITIND', 'SIEMENS', 'HAL', 'BEL', 'IRFC', 'RECLTD', 'PFC', 'ZOMATO', 'NYKAA',
+    'PAYTM', 'POLICYBZR', 'TRENT', 'DMART', 'BANDHANBNK', 'FEDERALBNK', 'IDFCFIRSTB', 'MUTHOOTFIN', 'CHOLAFIN',
+    'LUPIN', 'BIOCON', 'AUROPHARMA', 'MAXHEALTH', 'BAJAJ-AUTO', 'HEROMOTOCO', 'MAHINDRA', 'EICHERMOT', 'MOTHERSON',
+    'LTTS', 'PERSISTENT', 'COFORGE', 'MPHASIS', 'DLF', 'GODREJPROP', 'SOBHA', 'IRCTC', 'BRITANNIA', 'DABUR',
+    'GODREJCP', 'MARICO', 'DEEPAKNTR', 'AARTIIND', 'PVRINOX', 'INDIGRID', 'INDUSTOWER',
+    // US Stocks
+    ...US_STOCKS
 ];
 
-const BACKEND_SYMBOL = (s: string) =>
-    s === 'L&T' ? 'LT.NS' : `${s}.NS`;
-
-const BACKEND_SYMBOL = (s: string) =>
-    s === 'L&T' ? 'LT.NS' : `${s}.NS`;
+const BACKEND_SYMBOL = (s: string) => {
+    if (US_STOCKS.includes(s)) return s;
+    if (s === 'L&T') return 'LT.NS';
+    if (s === 'BAJAJ-AUTO') return 'BAJAJ-AUTO.NS';
+    return `${s}.NS`;
+};
 
 const POLL_MS = 30000; // 30 seconds
 

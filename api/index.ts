@@ -217,24 +217,32 @@ const getBatchPrices = async (symbols: string[]): Promise<Record<string, { price
     console.warn("NSE India fetch failed:", (err as Error).message);
   }
 
-  // Attempt 2: Yahoo Finance direct fetch (parallel per-symbol)
-  console.log("⚠️  Falling back to Yahoo Finance direct fetch");
-  await Promise.allSettled(
-    symbols.filter(s => !result[s]).map(async (sym) => {
-      try {
-        const quote = await fetchYahooQuote(sym);
-        const price: number = quote?.regularMarketPrice ?? 0;
-        if (price <= 0) throw new Error("no price");
-        const prevClose: number = quote?.regularMarketPreviousClose ?? 0;
-        const change = prevClose > 0
-          ? parseFloat(((price - prevClose) / prevClose * 100).toFixed(2))
-          : parseFloat(((quote?.regularMarketChangePercent ?? 0) * 100).toFixed(2));
-        result[sym] = { price, change };
-      } catch (err: any) {
-        console.warn(`Failed to fetch quote for ${sym}:`, err.message);
+  // Attempt 2: Yahoo Finance BATCH fetch
+  const remaining = symbols.filter(s => !result[s]);
+  if (remaining.length > 0) {
+    try {
+      console.log(`📡 Fetching ${remaining.length} symbols via Yahoo Finance Batch...`);
+      const quotes: any[] = await (yahooFinance as any).quote(remaining);
+      
+      // Ensure quotes is an array (individual quote returns an object, batch returns an array)
+      const quoteList = Array.isArray(quotes) ? quotes : [quotes];
+      
+      for (const quote of quoteList) {
+        if (!quote) continue;
+        const sym = quote.symbol;
+        const price: number = quote.regularMarketPrice ?? 0;
+        if (price > 0) {
+          const prevClose: number = quote.regularMarketPreviousClose ?? 0;
+          const change = prevClose > 0
+            ? parseFloat(((price - prevClose) / prevClose * 100).toFixed(2))
+            : parseFloat(((quote.regularMarketChangePercent ?? 0) * 100).toFixed(2));
+          result[sym] = { price, change };
+        }
       }
-    })
-  );
+    } catch (err: any) {
+      console.warn(`Yahoo Batch Quote failed:`, err.message);
+    }
+  }
 
   return result;
 };
@@ -245,7 +253,7 @@ app.get("/api/prices", async (req, res) => {
   const raw = (req.query.symbols as string) || "";
   const symbols = raw.split(",").map(s => s.trim().toUpperCase()).filter(Boolean);
   if (symbols.length === 0) return res.status(400).json({ error: "No symbols provided" });
-  if (symbols.length > 30) return res.status(400).json({ error: "Max 30 symbols per request" });
+  if (symbols.length > 150) return res.status(400).json({ error: "Max 150 symbols per request" });
   const prices = await getBatchPrices(symbols);
   res.json(prices);
 });
