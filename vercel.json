@@ -7,21 +7,22 @@
       "config": { "distDir": "dist" }
     },
     {
-      "src": "backend/server.ts",
+      "src": "api/index.ts",
       "use": "@vercel/node"
     }
   ],
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "backend/server.ts"
+      "destination": "/api/index.ts"
     },
     {
       "source": "/(.*)",
-      "destination": "frontend/$1"
+      "destination": "/index.html"
     }
   ],
   "cleanUrls": true
 }
+
 
 

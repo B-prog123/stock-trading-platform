@@ -1,0 +1,815 @@
+import express from "express";
+import cors from "cors";
+import axios from "axios";
+
+// ─── Yahoo Finance Helpers (Direct Fetch) ───────────────────────────────────
+// We use custom fetchers to avoid issues with library-specific validation/config.
+const YAHOO_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
+
+async function fetchYahooQuote(symbol: string) {
+  try {
+    const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}`;
+    const res = await axios.get(url, { headers: { "User-Agent": YAHOO_UA } });
+    if (!res.data?.quoteResponse?.result?.[0]) return null;
+    return res.data.quoteResponse.result[0];
+  } catch (err) {
+    console.warn(`Direct quote fetch failed for ${symbol}:`, (err as any).message);
+    return null;
+  }
+}
+
+async function fetchYahooChart(symbol: string, period1: number, period2: number, interval: string) {
+  try {
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?period1=${period1}&period2=${period2}&interval=${interval}`;
+    const res = await axios.get(url, { headers: { "User-Agent": YAHOO_UA } });
+    const result = res.data?.chart?.result?.[0];
+    if (!result || !result.timestamp) return null;
+
+    const timestamps = result.timestamp;
+    const quotes = result.indicators.quote[0];
+    const data = timestamps.map((timestamp: number, i: number) => ({
+      date: new Date(timestamp * 1000),
+      open: quotes.open[i],
+      high: quotes.high[i],
+      low: quotes.low[i],
+      close: quotes.close[i],
+    })).filter((d: any) => d.close != null && d.open != null);
+
+    return data;
+  } catch (err) {
+    console.warn(`Direct chart fetch failed for ${symbol}:`, (err as any).message);
+    return null;
+  }
+}
+
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
+import mongoose, { Schema, Types } from "mongoose";
+import { GoogleGenAI } from "@google/genai";
+import { MongoMemoryServer } from "mongodb-memory-server";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.resolve(__dirname, ".env") });
+dotenv.config({ path: path.resolve(__dirname, "../.env"), override: false });
+
+const app = express();
+const PORT = Number(process.env.PORT || 4000);
+const MONGODB_URI = process.env.MONGODB_URI || "";
+const FRONTEND_URL = process.env.FRONTEND_URL || "*";
+const JWT_SECRET = process.env.JWT_SECRET || "stockify-secret-key";
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
+const gemini = GEMINI_API_KEY ? new GoogleGenAI({ apiKey: GEMINI_API_KEY }) : null;
+
+let isUsingMemoryDB = false;
+if (!process.env.VERCEL && (!MONGODB_URI || MONGODB_URI.includes("<username>") || MONGODB_URI.includes("<password>"))) {
+  console.warn("⚠️  MONGODB_URI is missing or contains placeholder values.");
+  console.warn("⚠️  Starting in-memory MongoDB database for fallback operations.");
+  isUsingMemoryDB = true;
+} else if (process.env.VERCEL && (!MONGODB_URI || MONGODB_URI.includes("<username>"))) {
+  console.error("❌ CRITICAL: MONGODB_URI is missing on Vercel. Connections will fail.");
+}
+
+const normalizeOrigin = (value: string) => value.trim().replace(/\/$/, "");
+const allowedOrigins = FRONTEND_URL === "*"
+  ? "*"
+  : FRONTEND_URL.split(",").map(normalizeOrigin).filter(Boolean);
+
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
+app.use(express.json());
+
+const fallbackPrices: Record<string, number> = {
+  // US stocks
+  AAPL: 182.63, TSLA: 202.64, NVDA: 726.13, MSFT: 409.72, GOOGL: 147.22, AMZN: 174.42,
+  // Indian NSE stocks (Yahoo Finance uses .NS suffix)
+  "RELIANCE.NS": 2950.25, "TCS.NS": 4120.64, "HDFCBANK.NS": 1450.13,
+  "INFY.NS": 1680.72, "ICICIBANK.NS": 1050.22, "SBIN.NS": 780.42,
+  "WIPRO.NS": 452.10, "ADANIENT.NS": 3100.50, "ITC.NS": 430.15, "LT.NS": 3450.80,
+};
+const toISODate = (date: Date): string => date.toISOString().split("T")[0];
+const parseISODate = (value: string): Date | null => {
+  if (!value) return null;
+  const parsed = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return null;
+  parsed.setHours(0, 0, 0, 0);
+  return parsed;
+};
+const getNextSipDate = (fromDate: Date, frequency: "WEEKLY" | "MONTHLY") => {
+  const next = new Date(fromDate);
+  if (frequency === "WEEKLY") next.setDate(next.getDate() + 7);
+  else next.setMonth(next.getMonth() + 1);
+  next.setHours(0, 0, 0, 0);
+  return next;
+};
+
+// ─── NSE India Session ─────────────────────────────────────────────────────
+// NSE requires browser-like cookies — we grab them from the homepage first.
+const NSE_HEADERS = {
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+  "Accept": "application/json, text/plain, */*",
+  "Accept-Language": "en-US,en;q=0.9",
+  "Accept-Encoding": "gzip, deflate, br",
+  "Referer": "https://www.nseindia.com/",
+  "Connection": "keep-alive",
+  "sec-fetch-dest": "empty",
+  "sec-fetch-mode": "cors",
+  "sec-fetch-site": "same-origin",
+};
+
+let nseSession: { cookies: string; fetchedAt: number } | null = null;
+const NSE_SESSION_TTL_MS = 45 * 60 * 1000; // 45 minutes
+
+const getNseSession = async (): Promise<string> => {
+  if (nseSession && Date.now() - nseSession.fetchedAt < NSE_SESSION_TTL_MS) {
+    return nseSession.cookies;
+  }
+  const res = await axios.get("https://www.nseindia.com", {
+    headers: { ...NSE_HEADERS, Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" },
+    timeout: 12000,
+  });
+  const rawCookies: string[] = (res.headers["set-cookie"] as string[] | undefined) ?? [];
+  const cookies = rawCookies.map((c: string) => c.split(";")[0]).join("; ");
+  nseSession = { cookies, fetchedAt: Date.now() };
+  console.log("✅ NSE session refreshed");
+  return cookies;
+};
+
+// NSE symbol lookup (app symbol → NSE symbol)
+const NSE_SYMBOL_MAP: Record<string, string> = { "L&T": "LT" };
+const toNseSymbol = (sym: string) => NSE_SYMBOL_MAP[sym] || sym;
+
+// Cached NIFTY 50 price map (refreshed every fetch cycle)
+let niftyCache: { data: Record<string, { price: number; change: number }>; fetchedAt: number } | null = null;
+const NIFTY_CACHE_TTL_MS = 15000;
+
+const fetchNseNifty50 = async (): Promise<Record<string, { price: number; change: number }>> => {
+  if (niftyCache && Date.now() - niftyCache.fetchedAt < NIFTY_CACHE_TTL_MS) {
+    return niftyCache.data;
+  }
+  const cookies = await getNseSession();
+  const res = await axios.get("https://www.nseindia.com/api/equity-stockIndices?index=NIFTY%2050", {
+    headers: { ...NSE_HEADERS, Cookie: cookies },
+    timeout: 10000,
+  });
+  const stocks: any[] = res.data?.data ?? [];
+  const map: Record<string, { price: number; change: number }> = {};
+  for (const s of stocks) {
+    const sym: string = (s.symbol || "").toUpperCase();
+    const price: number = s.lastPrice ?? s.open ?? 0;
+    const change: number = s.pChange ?? 0; // percent change from previous close
+    if (sym && price > 0) {
+      map[sym] = { price, change: parseFloat(change.toFixed(2)) };
+    }
+  }
+  niftyCache = { data: map, fetchedAt: Date.now() };
+  return map;
+};
+
+// ─── getCurrentStockPrice (used by SIP & trade execution) ──────────────────
+const getCurrentStockPrice = async (symbol: string): Promise<number> => {
+  const safeSymbol = symbol.trim().toUpperCase();
+  // 1. Try NSE first
+  try {
+    const nseMap = await fetchNseNifty50();
+    const nseSym = toNseSymbol(safeSymbol);
+    if (nseMap[nseSym]?.price > 0) return nseMap[nseSym].price;
+    // If not in NIFTY 50, fetch individual equity endpoint
+    const cookies = await getNseSession();
+    const res = await axios.get(`https://www.nseindia.com/api/quote-equity?symbol=${encodeURIComponent(nseSym)}`, {
+      headers: { ...NSE_HEADERS, Cookie: cookies },
+      timeout: 8000,
+    });
+    const price: number = res.data?.priceInfo?.lastPrice ?? 0;
+    if (price > 0) return price;
+  } catch { /* fall through */ }
+
+  // 2. Fall back to Yahoo Finance direct fetch
+  try {
+    const yahooSym = safeSymbol === "L&T" ? "LT.NS" : safeSymbol.includes(".") ? safeSymbol : `${safeSymbol}.NS`;
+    const quote = await fetchYahooQuote(yahooSym);
+    const price: number = quote?.regularMarketPrice ?? 0;
+    if (price > 0) return price;
+  } catch { /* fall through */ }
+
+  return fallbackPrices[`${safeSymbol}.NS`] || fallbackPrices[safeSymbol] || 100;
+};
+
+type PriceData = { symbol: string; price: number; change: number };
+
+// ─── Batch price fetch for /api/prices endpoint ────────────────────────────
+const getBatchPrices = async (symbols: string[]): Promise<Record<string, { price: number; change: number }>> => {
+  const result: Record<string, { price: number; change: number }> = {};
+
+  // Attempt 1: NSE India (fetches all NIFTY 50 in one call)
+  try {
+    const nseMap = await fetchNseNifty50();
+    for (const sym of symbols) {
+      // sym may be "RELIANCE.NS" — strip .NS for NSE lookup
+      const appSym = sym.replace(/\.NS$/i, "").toUpperCase();
+      const nseSym = toNseSymbol(appSym);
+      if (nseMap[nseSym]) {
+        result[sym] = nseMap[nseSym]; // key matches what frontend sent
+      }
+    }
+    if (Object.keys(result).length >= Math.floor(symbols.length * 0.7)) {
+      console.log(`✅ NSE prices fetched for ${Object.keys(result).length}/${symbols.length} symbols`);
+      return result;
+    }
+  } catch (err) {
+    console.warn("NSE India fetch failed:", (err as Error).message);
+  }
+
+  // Attempt 2: Yahoo Finance direct fetch (parallel per-symbol)
+  console.log("⚠️  Falling back to Yahoo Finance direct fetch");
+  await Promise.allSettled(
+    symbols.filter(s => !result[s]).map(async (sym) => {
+      try {
+        const quote = await fetchYahooQuote(sym);
+        const price: number = quote?.regularMarketPrice ?? 0;
+        if (price <= 0) throw new Error("no price");
+        const prevClose: number = quote?.regularMarketPreviousClose ?? 0;
+        const change = prevClose > 0
+          ? parseFloat(((price - prevClose) / prevClose * 100).toFixed(2))
+          : parseFloat(((quote?.regularMarketChangePercent ?? 0) * 100).toFixed(2));
+        result[sym] = { price, change };
+      } catch {
+        const stripped = sym.replace(/\.NS$/i, "").toUpperCase();
+        result[sym] = { price: fallbackPrices[sym] || fallbackPrices[stripped] || 100, change: 0 };
+      }
+    })
+  );
+
+  return result;
+};
+
+// ─── /api/prices endpoint ──────────────────────────────────────────────────
+// Public endpoint — no auth required
+app.get("/api/prices", async (req, res) => {
+  const raw = (req.query.symbols as string) || "";
+  const symbols = raw.split(",").map(s => s.trim().toUpperCase()).filter(Boolean);
+  if (symbols.length === 0) return res.status(400).json({ error: "No symbols provided" });
+  if (symbols.length > 30) return res.status(400).json({ error: "Max 30 symbols per request" });
+  const prices = await getBatchPrices(symbols);
+  res.json(prices);
+});
+
+app.get("/api/probe", (req, res) => {
+  res.json({
+    status: "online",
+    version: "1.2.0",
+    engine: "direct-fetch",
+    timestamp: new Date().toISOString()
+  });
+});
+
+// ─── /api/historical endpoint ──────────────────────────────────────────────
+app.get("/api/historical", async (req, res) => {
+  const { symbol, interval = "1" } = req.query;
+  if (!symbol) return res.status(400).json({ error: "Symbol is required" });
+
+  const safeSymbol = String(symbol).trim().toUpperCase();
+  const usStocks = ["AAPL", "TSLA", "NVDA", "MSFT", "GOOGL", "AMZN", "META", "NFLX"];
+  let yahooSym = safeSymbol;
+
+  if (safeSymbol === "L&T") {
+    yahooSym = "LT.NS";
+  } else if (!safeSymbol.includes(".") && !usStocks.includes(safeSymbol)) {
+    yahooSym = `${safeSymbol}.NS`;
+  }
+
+  // Map frontend intervals from Market.tsx: ['1', 'W', 'M', '12M', '60M']
+  const intervalMap: Record<string, string> = {
+    "1": "15m",  // 1 Day view -> 15m candles
+    "W": "1h",   // 1 Week view -> 1h candles
+    "M": "1d",   // 1 Month view -> 1d candles
+    "12M": "1wk", // 1 Year view -> 1wk candles
+    "60M": "1mo", // 5 Year view -> 1mo candles
+  };
+
+  const timeframe = intervalMap[String(interval)] || "1d";
+  const p2 = Math.floor(Date.now() / 1000);
+  const p1_date = new Date();
+
+  if (interval === "1") p1_date.setDate(p1_date.getDate() - 7);
+  else if (interval === "W") p1_date.setDate(p1_date.getDate() - 30);
+  else if (interval === "M") p1_date.setMonth(p1_date.getMonth() - 6);
+  else if (interval === "12M") p1_date.setFullYear(p1_date.getFullYear() - 2);
+  else if (interval === "60M") p1_date.setFullYear(p1_date.getFullYear() - 10);
+  else p1_date.setMonth(p1_date.getMonth() - 1);
+
+  const p1 = Math.floor(p1_date.getTime() / 1000);
+
+  console.log(`Direct fetching chart for ${yahooSym} | Interval: ${interval} -> ${timeframe}`);
+
+  try {
+    const data = await fetchYahooChart(yahooSym, p1, p2, timeframe);
+
+    if (!data || data.length === 0) {
+      console.warn(`No data returned for ${yahooSym}`);
+      return res.json([]);
+    }
+
+    const chartData = data.map((d: any) => ({
+      time: Math.floor(new Date(d.date).getTime() / 1000),
+      open: d.open,
+      high: d.high,
+      low: d.low,
+      close: d.close,
+    }));
+
+    chartData.sort((a: any, b: any) => a.time - b.time);
+    console.log(`!!!! REBORN SUCCESS !!!! Sent ${chartData.length} data points for ${yahooSym}`);
+    res.json(chartData);
+  } catch (error: any) {
+    console.error(`Chart fetch failed for ${yahooSym}:`, error);
+    res.status(500).json({ error: "Failed to fetch historical data", details: error.message });
+  }
+});
+
+const UserSchema = new Schema({ email: { type: String, unique: true, required: true }, password: { type: String, required: true }, name: { type: String, required: true }, balance: { type: Number, default: 10000 } }, { timestamps: true });
+const PortfolioSchema = new Schema({ userId: { type: Schema.Types.ObjectId, ref: "User", required: true }, symbol: { type: String, required: true }, quantity: { type: Number, required: true }, avgPrice: { type: Number, required: true } }, { timestamps: true });
+PortfolioSchema.index({ userId: 1, symbol: 1 }, { unique: true });
+const WatchlistSchema = new Schema({ userId: { type: Schema.Types.ObjectId, ref: "User", required: true }, symbol: { type: String, required: true } }, { timestamps: true });
+WatchlistSchema.index({ userId: 1, symbol: 1 }, { unique: true });
+const AlertSchema = new Schema({ userId: { type: Schema.Types.ObjectId, ref: "User", required: true }, symbol: { type: String, required: true }, targetPrice: { type: Number, required: true }, type: { type: String, enum: ["ABOVE", "BELOW"], required: true }, active: { type: Boolean, default: true } }, { timestamps: true });
+const TransactionSchema = new Schema({ userId: { type: Schema.Types.ObjectId, ref: "User", required: true }, symbol: { type: String, required: true }, quantity: { type: Number, required: true }, price: { type: Number, required: true }, type: { type: String, enum: ["BUY", "SELL"], required: true }, source: { type: String, enum: ["MANUAL", "SIP"], default: "MANUAL" }, sipOrderId: { type: Schema.Types.ObjectId, ref: "SipOrder" }, date: { type: Date, default: Date.now } }, { timestamps: true });
+const SipOrderSchema = new Schema({ userId: { type: Schema.Types.ObjectId, ref: "User", required: true }, stockSymbol: { type: String, required: true }, investmentAmount: { type: Number, required: true }, frequency: { type: String, enum: ["WEEKLY", "MONTHLY"], required: true }, startDate: { type: String, required: true }, endDate: { type: String, default: null }, totalInvested: { type: Number, default: 0 }, totalShares: { type: Number, default: 0 }, status: { type: String, enum: ["ACTIVE", "PAUSED", "CANCELLED", "COMPLETED"], default: "ACTIVE" }, nextRunDate: { type: String, default: null }, lastExecutedAt: { type: String, default: null } }, { timestamps: true });
+const SipExecutionSchema = new Schema({ sipId: { type: Schema.Types.ObjectId, ref: "SipOrder", required: true }, userId: { type: Schema.Types.ObjectId, ref: "User", required: true }, stockSymbol: { type: String, required: true }, scheduledDate: { type: String, required: true }, executedAt: { type: Date, default: Date.now }, price: Number, amount: Number, shares: Number, status: { type: String, enum: ["SUCCESS", "FAILED"], required: true }, error: { type: String, default: null } }, { timestamps: true });
+const SipNotificationSchema = new Schema({ userId: { type: Schema.Types.ObjectId, ref: "User", required: true }, sipId: { type: Schema.Types.ObjectId, ref: "SipOrder" }, type: { type: String, enum: ["EXECUTED", "COMPLETED", "FAILED"], required: true }, message: { type: String, required: true }, read: { type: Boolean, default: false }, createdAt: { type: Date, default: Date.now } });
+
+const User = mongoose.model("User", UserSchema);
+const Portfolio = mongoose.model("Portfolio", PortfolioSchema);
+const Watchlist = mongoose.model("Watchlist", WatchlistSchema);
+const Alert = mongoose.model("Alert", AlertSchema);
+const Transaction = mongoose.model("Transaction", TransactionSchema);
+const SipOrder = mongoose.model("SipOrder", SipOrderSchema);
+const SipExecution = mongoose.model("SipExecution", SipExecutionSchema);
+const SipNotification = mongoose.model("SipNotification", SipNotificationSchema);
+
+const toObjectId = (id: string) => new Types.ObjectId(id);
+
+const STOCKIFY_SYSTEM_PROMPT = `
+You are Stockify AI, an elite Wall Street quantitative analyst and expert stock market mentor. 
+
+Your goal is to be highly productive and answer EVERY question related to the stock market, trading, finance, and economics with extreme detail and accuracy.
+- If asked about trading strategies (e.g., day trading, swing trading, options), break down the mechanics, risks, and optimal setups.
+- If asked about technical analysis, explain indicators (RSI, MACD, Bollinger Bands, Moving Averages) comprehensively, giving actionable examples of how to use them together.
+- If asked about fundamental analysis (P/E ratio, EPS, Debt-to-Equity, Free Cash Flow), explain what they mean and how to interpret them in different sectors.
+- If asked about Indian markets (NSE, BSE, NIFTY 50, SENSEX, BankNifty), provide relevant historical context and structural insights.
+- Provide step-by-step guidance on portfolio management, risk mitigation (position sizing, stop-losses), and SIP investments.
+- If the user asks about Stockify platform features (Watchlist, Portfolio, Market Watch, SIPs, Funds, Orders), give clear, concise instructions on how to use them.
+
+Tone: Professional, highly educational, actionable, and encouraging. Never give literal financial advice (use disclaimers where necessary), but DO give strong educational guidance on how an expert would approach the problem. Format your answers clearly using bullet points and bold text for readability.
+`;
+
+const stockTradingFAQ: { keywords: string[]; answer: string }[] = [
+  { keywords: ["start trading", "begin", "beginner", "new to", "first trade"], answer: "To start trading: 1) Add funds via Funds tab. 2) Research in Market Watch. 3) Add to Watchlist. 4) Start small (1-2% per trade). 5) Always set stop-loss. Visit Academy tab to learn charts." },
+  { keywords: ["risk", "stop loss", "drawdown", "manage risk", "loss"], answer: "Risk management: Risk max 1-2% per trade. Set stop-loss before entering. Diversify sectors. Never trade emotionally. Track P&L in Portfolio tab." },
+  { keywords: ["diversify", "allocation", "concentration", "spread"], answer: "Invest across Tech, Finance, Energy, FMCG. Max 10-15% in one stock. Use SIPs for systematic multi-stock investing. Review monthly in Portfolio tab." },
+  { keywords: ["sip", "systematic investment", "monthly invest", "auto invest", "rupee cost"], answer: "SIP invests fixed amounts periodically, reducing risk via rupee cost averaging. Go to SIPs tab, enter stock symbol, amount, frequency, start date to create one." },
+  { keywords: ["candlestick", "candle", "chart pattern"], answer: "Candlesticks: Green = price up, Red = price down. Key patterns: Doji (indecision), Hammer (reversal), Engulfing (trend change). See Academy tab for tutorials." },
+  { keywords: ["buy", "when to buy", "entry point", "purchase"], answer: "Buy signals: 1) Price breaks resistance with volume. 2) RSI below 30 (oversold). 3) Golden Cross (50MA above 200MA). Check Market Watch for live prices." },
+  { keywords: ["sell", "when to sell", "exit", "take profit"], answer: "Sell when: 1) Price target achieved. 2) Stop-loss triggered. 3) Fundamentals worsen. 4) RSI above 70 (overbought). Always plan exit before entry." },
+  { keywords: ["nifty", "sensex", "index", "market index", "benchmark"], answer: "NIFTY 50 = top 50 NSE companies. SENSEX = top 30 BSE companies. Market health benchmarks. Track live on Dashboard." },
+  { keywords: ["pe ratio", "p/e", "valuation", "price to earnings"], answer: "P/E = Price / EPS. Lower P/E may mean undervalued. Sector avg: FMCG ~50, Banks ~15-20, IT ~25-30. Compare within same sector only." },
+  { keywords: ["moving average", "sma", "ema", "50 day", "200 day", "golden cross", "death cross"], answer: "Golden Cross (50MA above 200MA) = bullish. Death Cross (50MA below 200MA) = bearish. EMA responds faster than SMA." },
+  { keywords: ["rsi", "relative strength", "overbought", "oversold"], answer: "RSI: Above 70 = overbought (consider selling). Below 30 = oversold (consider buying). 40-60 = neutral. Confirm with price action." },
+  { keywords: ["macd", "momentum", "signal line"], answer: "MACD: Bullish when crosses above signal line. Bearish when crosses below. Use alongside RSI for confirmation." },
+  { keywords: ["watchlist", "track stock", "watch list"], answer: "In Watchlist tab, search by symbol (RELIANCE, TCS), add to track real-time prices. Click any stock to open Market Watch for charts and trading." },
+  { keywords: ["balance", "wallet", "funds", "deposit", "add money"], answer: "Add funds via Funds tab. Balance shows on Dashboard as Available Margin. Buying decreases balance, selling increases it automatically." },
+  { keywords: ["order", "transaction", "history", "orders"], answer: "All buy/sell orders are logged in Orders tab with symbol, quantity, price, and type (BUY/SELL or SIP source)." },
+  { keywords: ["portfolio", "holdings", "profit", "loss", "pnl"], answer: "Portfolio tab shows holdings, average price, current value, and P&L. Dashboard shows total portfolio value and balance combined." },
+];
+
+const getSmartFallback = (message: string): string => {
+  const msg = message.toLowerCase();
+  const match = stockTradingFAQ.find(item => item.keywords.some(k => msg.includes(k)));
+  if (match) return match.answer;
+  return "I can help with stock trading, chart analysis, portfolio management, SIP investments, and Stockify platform features. Try asking: 'How to read candlestick charts?', 'What is RSI?', 'How do I create a SIP?', or 'When should I buy a stock?'";
+};
+
+const authenticateToken = (req: any, res: any, next: any) => {
+  const token = req.headers["authorization"]?.split(" ")[1];
+  if (!token) return res.sendStatus(401);
+  jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
+    if (err) return res.sendStatus(403);
+    req.user = user;
+    next();
+  });
+};
+const createSipNotification = async (userId: string, sipId: string, type: "EXECUTED" | "COMPLETED" | "FAILED", message: string) => {
+  await SipNotification.create({ userId: toObjectId(userId), sipId: toObjectId(sipId), type, message });
+};
+
+const executeDueSip = async (sip: any) => {
+  const scheduledDate = parseISODate(sip.nextRunDate);
+  if (!scheduledDate) return;
+
+  const endDate = sip.endDate ? parseISODate(sip.endDate) : null;
+  if (endDate && scheduledDate > endDate) {
+    sip.status = "COMPLETED";
+    sip.nextRunDate = null;
+    await sip.save();
+    await createSipNotification(String(sip.userId), String(sip._id), "COMPLETED", `SIP for ${sip.stockSymbol} is completed.`);
+    return;
+  }
+
+  const stockPrice = await getCurrentStockPrice(sip.stockSymbol);
+  if (!stockPrice || stockPrice <= 0) {
+    sip.nextRunDate = toISODate(getNextSipDate(scheduledDate, sip.frequency));
+    await sip.save();
+    await SipExecution.create({ sipId: sip._id, userId: sip.userId, stockSymbol: sip.stockSymbol, scheduledDate: sip.nextRunDate, status: "FAILED", error: "Unable to fetch stock price" });
+    await createSipNotification(String(sip.userId), String(sip._id), "FAILED", `SIP for ${sip.stockSymbol} failed: stock price unavailable.`);
+    return;
+  }
+
+  const user: any = await User.findById(sip.userId);
+  if (!user || user.balance < sip.investmentAmount) {
+    sip.nextRunDate = toISODate(getNextSipDate(scheduledDate, sip.frequency));
+    await sip.save();
+    await SipExecution.create({ sipId: sip._id, userId: sip.userId, stockSymbol: sip.stockSymbol, scheduledDate: sip.nextRunDate, price: stockPrice, amount: sip.investmentAmount, status: "FAILED", error: "Insufficient wallet balance" });
+    await createSipNotification(String(sip.userId), String(sip._id), "FAILED", `SIP for ${sip.stockSymbol} failed due to insufficient balance.`);
+    return;
+  }
+
+  const shares = parseFloat((sip.investmentAmount / stockPrice).toFixed(6));
+  const nextRun = getNextSipDate(scheduledDate, sip.frequency);
+  const shouldComplete = endDate && nextRun > endDate;
+
+  user.balance -= sip.investmentAmount;
+  await user.save();
+
+  const holding: any = await Portfolio.findOne({ userId: sip.userId, symbol: sip.stockSymbol });
+  if (holding) {
+    const newQty = holding.quantity + shares;
+    holding.avgPrice = ((holding.avgPrice * holding.quantity) + (stockPrice * shares)) / newQty;
+    holding.quantity = newQty;
+    await holding.save();
+  } else {
+    await Portfolio.create({ userId: sip.userId, symbol: sip.stockSymbol, quantity: shares, avgPrice: stockPrice });
+  }
+
+  await Transaction.create({ userId: sip.userId, symbol: sip.stockSymbol, quantity: shares, price: stockPrice, type: "BUY", source: "SIP", sipOrderId: sip._id });
+  await SipExecution.create({ sipId: sip._id, userId: sip.userId, stockSymbol: sip.stockSymbol, scheduledDate: sip.nextRunDate, price: stockPrice, amount: sip.investmentAmount, shares, status: "SUCCESS" });
+
+  sip.totalInvested += sip.investmentAmount;
+  sip.totalShares += shares;
+  sip.lastExecutedAt = toISODate(scheduledDate);
+  sip.nextRunDate = shouldComplete ? null : toISODate(nextRun);
+  sip.status = shouldComplete ? "COMPLETED" : "ACTIVE";
+  await sip.save();
+
+  await createSipNotification(String(sip.userId), String(sip._id), "EXECUTED", `SIP executed for ${sip.stockSymbol}: ₹${sip.investmentAmount.toFixed(2)} invested.`);
+  if (shouldComplete) await createSipNotification(String(sip.userId), String(sip._id), "COMPLETED", `SIP for ${sip.stockSymbol} has reached its end date and is now completed.`);
+};
+
+const processDueSips = async () => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const dueSips = await SipOrder.find({ status: "ACTIVE", nextRunDate: { $ne: null, $lte: toISODate(today) } }).sort({ nextRunDate: 1 });
+  for (const sip of dueSips) await executeDueSip(sip);
+};
+
+app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
+
+app.post("/api/auth/register", async (req, res) => {
+  const { email, password, name } = req.body;
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await User.create({ email, password: hashedPassword, name });
+    res.status(201).json({ id: String(user._id) });
+  } catch {
+    res.status(400).json({ error: "Email already exists" });
+  }
+});
+
+app.post("/api/auth/login", async (req, res) => {
+  const { email, password } = req.body;
+  const user: any = await User.findOne({ email });
+  if (!user || !(await bcrypt.compare(password, user.password))) return res.status(401).json({ error: "Invalid credentials" });
+  const token = jwt.sign({ id: String(user._id), email: user.email }, JWT_SECRET);
+  res.json({ token, user: { id: String(user._id), email: user.email, name: user.name, balance: user.balance, phone: user.phone || "" } });
+});
+
+
+
+
+
+app.get("/api/user/profile", authenticateToken, async (req: any, res) => {
+  const user: any = await User.findById(req.user.id).select("_id email name balance");
+  if (!user) return res.status(404).json({ error: "User not found" });
+  res.json({ id: String(user._id), email: user.email, name: user.name, balance: user.balance });
+});
+
+app.put("/api/user/profile", authenticateToken, async (req: any, res) => {
+  if (typeof req.body.name !== "string" || !req.body.name.trim()) return res.status(400).json({ error: "Invalid name" });
+  const user: any = await User.findByIdAndUpdate(req.user.id, { name: req.body.name.trim() }, { new: true }).select("_id email name balance");
+  if (!user) return res.status(404).json({ error: "User not found" });
+  res.json({ id: String(user._id), email: user.email, name: user.name, balance: user.balance });
+});
+
+app.post("/api/user/wallet/deposit", authenticateToken, async (req: any, res) => {
+  if (typeof req.body.amount !== "number" || req.body.amount <= 0) return res.status(400).json({ error: "Invalid deposit amount" });
+  const user: any = await User.findByIdAndUpdate(req.user.id, { $inc: { balance: req.body.amount } }, { new: true }).select("balance");
+  if (!user) return res.status(404).json({ error: "User not found" });
+  res.json({ balance: user.balance });
+});
+
+app.get("/api/portfolio", authenticateToken, async (req: any, res) => {
+  const rows = await Portfolio.find({ userId: req.user.id }).lean();
+  res.json(rows.map((r: any) => ({ userId: String(r.userId), symbol: r.symbol, quantity: r.quantity, avgPrice: r.avgPrice })));
+});
+
+app.get("/api/portfolio/performance", authenticateToken, async (req: any, res) => {
+  const rows: any[] = await Portfolio.find({ userId: req.user.id }).lean();
+  const items = await Promise.all(rows.map(async (item) => {
+    const currentPrice = await getCurrentStockPrice(item.symbol);
+    const investedValue = item.quantity * item.avgPrice;
+    const currentValue = item.quantity * currentPrice;
+    const profitLoss = currentValue - investedValue;
+    return { symbol: item.symbol, quantity: item.quantity, avgPrice: item.avgPrice, currentPrice, investedValue, currentValue, profitLoss, profitLossPercent: investedValue > 0 ? (profitLoss / investedValue) * 100 : 0 };
+  }));
+  const totals = items.reduce((acc, i) => ({ investedValue: acc.investedValue + i.investedValue, currentValue: acc.currentValue + i.currentValue, profitLoss: acc.profitLoss + i.profitLoss }), { investedValue: 0, currentValue: 0, profitLoss: 0 });
+  res.json({ items, totals: { ...totals, profitLossPercent: totals.investedValue > 0 ? (totals.profitLoss / totals.investedValue) * 100 : 0 } });
+});
+
+app.get("/api/portfolio/breakdown", authenticateToken, async (req: any, res) => {
+  const manualRows = await Transaction.find({ userId: req.user.id, type: "BUY", $or: [{ source: "MANUAL" }, { source: { $exists: false } }] }).lean();
+  const sipRows = await SipExecution.find({ userId: req.user.id, status: "SUCCESS" }).lean();
+  const manualInvested = manualRows.reduce((acc, t: any) => acc + (t.quantity * t.price), 0);
+  const sipInvested = sipRows.reduce((acc, t: any) => acc + (t.amount || 0), 0);
+  res.json({ manualInvested, sipInvested });
+});
+app.post("/api/trade", authenticateToken, async (req: any, res) => {
+  const { symbol, quantity, price, type } = req.body;
+  if (!symbol || typeof quantity !== "number" || quantity <= 0 || typeof price !== "number" || !["BUY", "SELL"].includes(type)) {
+    return res.status(400).json({ error: "Invalid trade parameters" });
+  }
+
+  const user: any = await User.findById(req.user.id);
+  if (!user) return res.status(404).json({ error: "User not found" });
+
+  if (type === "BUY") {
+    const totalCost = quantity * price;
+    if (user.balance < totalCost) return res.status(400).json({ error: "Insufficient balance" });
+    user.balance -= totalCost;
+    await user.save();
+
+    const existing: any = await Portfolio.findOne({ userId: req.user.id, symbol });
+    if (existing) {
+      const newQty = existing.quantity + quantity;
+      existing.avgPrice = (existing.avgPrice * existing.quantity + price * quantity) / newQty;
+      existing.quantity = newQty;
+      await existing.save();
+    } else {
+      await Portfolio.create({ userId: req.user.id, symbol, quantity, avgPrice: price });
+    }
+
+    await Transaction.create({ userId: req.user.id, symbol, quantity, price, type: "BUY", source: "MANUAL" });
+  } else {
+    const existing: any = await Portfolio.findOne({ userId: req.user.id, symbol });
+    if (!existing || existing.quantity < quantity) return res.status(400).json({ error: "Insufficient stock quantity" });
+
+    user.balance += quantity * price;
+    await user.save();
+
+    const newQty = existing.quantity - quantity;
+    if (newQty === 0) await Portfolio.deleteOne({ _id: existing._id });
+    else {
+      existing.quantity = newQty;
+      await existing.save();
+    }
+
+    await Transaction.create({ userId: req.user.id, symbol, quantity, price, type: "SELL", source: "MANUAL" });
+  }
+
+  res.json({ success: true });
+});
+
+app.get("/api/transactions", authenticateToken, async (req: any, res) => {
+  const rows = await Transaction.find({ userId: req.user.id }).sort({ date: -1 }).lean();
+  res.json(rows.map((r: any) => ({ id: String(r._id), symbol: r.symbol, quantity: r.quantity, price: r.price, type: r.type, source: r.source || "MANUAL", date: r.date })));
+});
+
+app.get("/api/sip/notifications", authenticateToken, async (req: any, res) => {
+  const afterId = req.query.afterId as string | undefined;
+  const filter: any = { userId: req.user.id };
+  if (afterId && Types.ObjectId.isValid(afterId)) filter._id = { $gt: new Types.ObjectId(afterId) };
+  const rows = await SipNotification.find(filter).sort({ _id: 1 }).limit(30).lean();
+  res.json(rows.map((r: any) => ({ id: String(r._id), type: r.type, message: r.message, read: r.read, createdAt: r.createdAt, sipId: r.sipId ? String(r.sipId) : null })));
+});
+
+app.patch("/api/sip/notifications/read", authenticateToken, async (req: any, res) => {
+  await SipNotification.updateMany({ userId: req.user.id, read: false }, { $set: { read: true } });
+  res.json({ success: true });
+});
+
+app.get("/api/sip", authenticateToken, async (req: any, res) => {
+  const rows = await SipOrder.find({ userId: req.user.id }).sort({ createdAt: -1 }).lean();
+  res.json(rows.map((r: any) => ({ ...r, id: String(r._id), _id: undefined })));
+});
+
+app.get("/api/sip/dashboard", authenticateToken, async (req: any, res) => {
+  const sips: any[] = await SipOrder.find({ userId: req.user.id }).sort({ createdAt: -1 }).lean();
+  let currentValue = 0;
+  for (const sip of sips) {
+    if (!sip.totalShares || sip.totalShares <= 0) continue;
+    const price = await getCurrentStockPrice(sip.stockSymbol);
+    currentValue += sip.totalShares * price;
+  }
+  const totalInvested = sips.reduce((acc, s: any) => acc + (s.totalInvested || 0), 0);
+  const totalShares = sips.reduce((acc, s: any) => acc + (s.totalShares || 0), 0);
+  res.json({ sips: sips.map((s: any) => ({ ...s, id: String(s._id), _id: undefined })), summary: { activeSips: sips.filter((s) => s.status === "ACTIVE").length, totalInvested, totalShares, profitLoss: currentValue - totalInvested } });
+});
+
+app.get("/api/sip/:id", authenticateToken, async (req: any, res) => {
+  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ error: "Invalid SIP id" });
+  const sip: any = await SipOrder.findOne({ _id: req.params.id, userId: req.user.id }).lean();
+  if (!sip) return res.status(404).json({ error: "SIP not found" });
+  const history = await SipExecution.find({ sipId: req.params.id, userId: req.user.id }).sort({ executedAt: -1 }).lean();
+  res.json({ sip: { ...sip, id: String(sip._id), _id: undefined }, history: history.map((h: any) => ({ ...h, id: String(h._id), _id: undefined })) });
+});
+
+app.post("/api/sip", authenticateToken, async (req: any, res) => {
+  const { stockSymbol, investmentAmount, frequency, startDate, endDate } = req.body;
+  const symbol = String(stockSymbol || "").trim().toUpperCase();
+  if (!symbol || !/^[A-Z.]{1,10}$/.test(symbol)) return res.status(400).json({ error: "Invalid stock symbol" });
+  if (typeof investmentAmount !== "number" || investmentAmount <= 0) return res.status(400).json({ error: "Investment amount must be greater than 0" });
+  if (!["WEEKLY", "MONTHLY"].includes(frequency)) return res.status(400).json({ error: "Invalid SIP frequency" });
+
+  const parsedStart = parseISODate(startDate);
+  if (!parsedStart) return res.status(400).json({ error: "Invalid start date" });
+  const parsedEnd = endDate ? parseISODate(endDate) : null;
+  if (endDate && !parsedEnd) return res.status(400).json({ error: "Invalid end date" });
+  if (parsedEnd && parsedEnd < parsedStart) return res.status(400).json({ error: "End date must be on or after start date" });
+
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  let nextRunDate = new Date(parsedStart);
+  while (nextRunDate < today) nextRunDate = getNextSipDate(nextRunDate, frequency);
+
+  const created: any = await SipOrder.create({ userId: req.user.id, stockSymbol: symbol, investmentAmount, frequency, startDate: toISODate(parsedStart), endDate: parsedEnd ? toISODate(parsedEnd) : null, nextRunDate: toISODate(nextRunDate) });
+  res.status(201).json({ ...created.toObject(), id: String(created._id), _id: undefined });
+});
+
+app.put("/api/sip/:id", authenticateToken, async (req: any, res) => {
+  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ error: "Invalid SIP id" });
+  const sip: any = await SipOrder.findOne({ _id: req.params.id, userId: req.user.id });
+  if (!sip) return res.status(404).json({ error: "SIP not found" });
+
+  const symbol = req.body.stockSymbol ? String(req.body.stockSymbol).trim().toUpperCase() : sip.stockSymbol;
+  const newAmount = typeof req.body.investmentAmount === "number" ? req.body.investmentAmount : sip.investmentAmount;
+  const newFreq = req.body.frequency || sip.frequency;
+  const newStatus = req.body.status || sip.status;
+  if (!symbol || !/^[A-Z.]{1,10}$/.test(symbol)) return res.status(400).json({ error: "Invalid stock symbol" });
+  if (typeof newAmount !== "number" || newAmount <= 0) return res.status(400).json({ error: "Invalid amount" });
+  if (!["WEEKLY", "MONTHLY"].includes(newFreq)) return res.status(400).json({ error: "Invalid frequency" });
+  if (!["ACTIVE", "PAUSED", "CANCELLED", "COMPLETED"].includes(newStatus)) return res.status(400).json({ error: "Invalid status" });
+
+  const parsedStart = parseISODate(req.body.startDate || sip.startDate);
+  if (!parsedStart) return res.status(400).json({ error: "Invalid start date" });
+  const endRaw = (req.body.endDate ?? sip.endDate) || null;
+  const parsedEnd = endRaw ? parseISODate(endRaw) : null;
+  if (endRaw && !parsedEnd) return res.status(400).json({ error: "Invalid end date" });
+  if (parsedEnd && parsedEnd < parsedStart) return res.status(400).json({ error: "End date must be after start date" });
+
+  let nextRunDate = sip.nextRunDate ? (parseISODate(sip.nextRunDate) || parsedStart) : parsedStart;
+  if (req.body.startDate || req.body.frequency) {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    nextRunDate = new Date(parsedStart);
+    while (nextRunDate < today) nextRunDate = getNextSipDate(nextRunDate, newFreq);
+  }
+
+  sip.stockSymbol = symbol;
+  sip.investmentAmount = newAmount;
+  sip.frequency = newFreq;
+  sip.startDate = toISODate(parsedStart);
+  sip.endDate = parsedEnd ? toISODate(parsedEnd) : null;
+  sip.status = newStatus;
+  sip.nextRunDate = toISODate(nextRunDate);
+  await sip.save();
+  res.json({ ...sip.toObject(), id: String(sip._id), _id: undefined });
+});
+
+app.patch("/api/sip/:id/status", authenticateToken, async (req: any, res) => {
+  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ error: "Invalid SIP id" });
+  if (!["ACTIVE", "PAUSED", "CANCELLED"].includes(req.body.status)) return res.status(400).json({ error: "Invalid status" });
+  const sip: any = await SipOrder.findOne({ _id: req.params.id, userId: req.user.id });
+  if (!sip) return res.status(404).json({ error: "SIP not found" });
+  sip.status = req.body.status;
+  await sip.save();
+  res.json({ ...sip.toObject(), id: String(sip._id), _id: undefined });
+});
+
+app.delete("/api/sip/:id", authenticateToken, async (req: any, res) => {
+  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ error: "Invalid SIP id" });
+  const sip: any = await SipOrder.findOne({ _id: req.params.id, userId: req.user.id });
+  if (!sip) return res.status(404).json({ error: "SIP not found" });
+  sip.status = "CANCELLED";
+  await sip.save();
+  await createSipNotification(req.user.id, req.params.id, "COMPLETED", "SIP has been cancelled.");
+  res.json({ success: true });
+});
+
+app.get("/api/watchlist", authenticateToken, async (req: any, res) => {
+  const rows = await Watchlist.find({ userId: req.user.id }).lean();
+  res.json(rows.map((r: any) => ({ symbol: r.symbol })));
+});
+
+app.post("/api/watchlist", authenticateToken, async (req: any, res) => {
+  try {
+    await Watchlist.create({ userId: req.user.id, symbol: req.body.symbol });
+    res.json({ success: true });
+  } catch {
+    res.status(400).json({ error: "Already in watchlist" });
+  }
+});
+
+app.delete("/api/watchlist/:symbol", authenticateToken, async (req: any, res) => {
+  await Watchlist.deleteOne({ userId: req.user.id, symbol: req.params.symbol });
+  res.json({ success: true });
+});
+
+app.get("/api/alerts", authenticateToken, async (req: any, res) => {
+  const rows = await Alert.find({ userId: req.user.id, active: true }).lean();
+  res.json(rows.map((r: any) => ({ ...r, id: String(r._id), _id: undefined })));
+});
+
+app.post("/api/alerts", authenticateToken, async (req: any, res) => {
+  await Alert.create({ userId: req.user.id, symbol: req.body.symbol, targetPrice: req.body.targetPrice, type: req.body.type });
+  res.json({ success: true });
+});
+
+app.delete("/api/alerts/:id", authenticateToken, async (req: any, res) => {
+  if (!Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ error: "Invalid alert id" });
+  await Alert.deleteOne({ userId: req.user.id, _id: req.params.id });
+  res.json({ success: true });
+});
+
+app.post("/api/ai/chat", async (req: any, res) => {
+  // Optional auth — chatbot works for all users
+  const authHeader = req.headers["authorization"];
+  if (authHeader) {
+    const tkn = authHeader.split(" ")[1];
+    try { jwt.verify(tkn, JWT_SECRET, (err: any, user: any) => { if (!err) req.user = user; }); } catch { /* ignore */ }
+  }
+
+  const { message } = req.body;
+  if (typeof message !== "string" || !message.trim()) return res.status(400).json({ error: "Message is required" });
+
+  if (gemini) {
+    try {
+      const fullPrompt = `${STOCKIFY_SYSTEM_PROMPT} \n\nUser question: ${message} `;
+      const response = await gemini.models.generateContent({ model: "gemini-2.5-flash", contents: fullPrompt });
+      const text = response.text?.trim();
+      if (text) return res.json({ text });
+    } catch (error) {
+      console.error("Gemini error:", error);
+    }
+  }
+  // Smart knowledge-base fallback (replaces the old limited-question reply)
+  return res.json({ text: getSmartFallback(message) });
+});
+
+async function startServer() {
+  let finalUri = MONGODB_URI;
+  if (isUsingMemoryDB) {
+    const mongoServer = await MongoMemoryServer.create();
+    finalUri = mongoServer.getUri();
+  }
+
+  if (finalUri && !finalUri.includes("<username>")) {
+    await mongoose.connect(finalUri);
+    console.log(`✅ Connected to ${isUsingMemoryDB ? 'in-memory ' : ''}MongoDB database successfully.`);
+  }
+
+  if (!process.env.VERCEL) {
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`🚀 API server running on http://localhost:${PORT}`);
+    });
+    await processDueSips();
+    setInterval(() => processDueSips(), 60 * 1000);
+  }
+}
+
+// In serverless environments, we export the app and handle DB connection inside the request or via a warm-up.
+// For Vercel, we'll try to connect once.
+if (process.env.VERCEL) {
+  mongoose.connect(MONGODB_URI).catch(err => console.error("Vercel DB Connect Error:", err));
+}
+
+startServer().catch((error) => {
+  console.error("Failed to start server:", error);
+  if (!process.env.VERCEL) process.exit(1);
+});
+
+export default app;
+
+
+
+
