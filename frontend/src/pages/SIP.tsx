@@ -71,7 +71,7 @@ export default function SIP() {
 
     const interval = setInterval(() => {
       fetchNotifications(lastNotifId);
-      fetchDashboard(false);
+      fetchDashboard(false, true);
     }, 30000);
 
     return () => clearInterval(interval);
@@ -79,7 +79,7 @@ export default function SIP() {
 
   const activeCount = useMemo(() => sips.filter((s) => s.status === 'ACTIVE').length, [sips]);
 
-  const fetchDashboard = async (withLoader = true) => {
+  const fetchDashboard = async (withLoader = true, silent = false) => {
     if (withLoader) setLoading(true);
     try {
       const res = await fetch(apiUrl('/api/sip/dashboard'), {
@@ -95,9 +95,14 @@ export default function SIP() {
         const data = await res.json();
         setSips(data.sips || []);
         setSummary(data.summary || { activeSips: 0, totalInvested: 0, totalShares: 0, profitLoss: 0 });
+      } else if (!silent) {
+        addNotification('Error', 'Failed to fetch SIP dashboard', 'error');
       }
     } catch (error) {
       console.error('Failed to fetch SIP dashboard', error);
+      if (!silent) {
+        addNotification('Error', 'Network error fetching SIP dashboard', 'error');
+      }
     } finally {
       if (withLoader) setLoading(false);
     }

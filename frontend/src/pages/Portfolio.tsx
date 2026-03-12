@@ -58,7 +58,7 @@ export default function Portfolio() {
     fetchPortfolio();
   }, [token]);
 
-  const fetchPortfolio = async () => {
+  const fetchPortfolio = async (silent = false) => {
     try {
       const [portfolioRes, performanceRes, breakdownRes] = await Promise.all([
         fetch(apiUrl('/api/portfolio'), { headers: { Authorization: `Bearer ${token}` } }),
@@ -77,7 +77,7 @@ export default function Portfolio() {
 
       if (portfolioRes.ok) {
         setPortfolio(await portfolioRes.json());
-      } else {
+      } else if (!silent) {
         addNotification('Error', 'Failed to fetch portfolio', 'error');
       }
 
@@ -96,7 +96,9 @@ export default function Portfolio() {
       }
     } catch (err) {
       console.error('Portfolio fetch error', err);
-      addNotification('Error', 'Network error fetching portfolio', 'error');
+      if (!silent) {
+        addNotification('Error', 'Network error fetching portfolio', 'error');
+      }
     } finally {
       setLoading(false);
     }
@@ -148,7 +150,7 @@ export default function Portfolio() {
       });
     }, 3000);
 
-    const refreshInterval = setInterval(fetchPortfolio, 15000); // Fresh data every 15s
+    const refreshInterval = setInterval(() => fetchPortfolio(true), 15000); // Fresh data every 15s
     return () => { clearInterval(interval); clearInterval(refreshInterval); };
   }, [performance]);
 

@@ -250,12 +250,26 @@ const getBatchPrices = async (symbols: string[]): Promise<Record<string, { price
 // ─── /api/prices endpoint ──────────────────────────────────────────────────
 // Public endpoint — no auth required
 app.get("/api/prices", async (req, res) => {
-  const raw = (req.query.symbols as string) || "";
-  const symbols = raw.split(",").map(s => s.trim().toUpperCase()).filter(Boolean);
-  if (symbols.length === 0) return res.status(400).json({ error: "No symbols provided" });
-  if (symbols.length > 150) return res.status(400).json({ error: "Max 150 symbols per request" });
-  const prices = await getBatchPrices(symbols);
-  res.json(prices);
+  try {
+    const raw = (req.query.symbols as string) || "";
+    const symbols = raw.split(",").map(s => s.trim().toUpperCase()).filter(Boolean);
+    if (symbols.length === 0) return res.status(400).json({ error: "No symbols provided" });
+    if (symbols.length > 200) return res.status(400).json({ error: "Max 200 symbols per request" });
+    
+    // Add a race against a timeout to prevent the whole request from hanging if getBatchPrices hangs
+    const prices = await Promise.race([
+      getBatchPrices(symbols),
+      new Promise<Record<string, any>>((_, reject) => setTimeout(() => reject(new Error("Timeout")), 12000))
+    ]).catch(err => {
+      console.error("[API] /api/prices failed or timed out:", err.message);
+      return {}; // return empty if failure
+    });
+    
+    res.json(prices);
+  } catch (err: any) {
+    console.error("[API] Fatal error in /api/prices:", err.message);
+    res.json({}); // Fail gracefully with empty data instead of error
+  }
 });
 
 app.get("/api/probe", (req, res) => {

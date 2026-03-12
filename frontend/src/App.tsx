@@ -125,11 +125,12 @@ export default function App() {
     localStorage.removeItem('user');
   };
 
-  const refreshUser = async () => {
+  const refreshUser = async (silent = false) => {
     if (!token) return;
     try {
       const res = await fetch(apiUrl('/api/user/profile'), {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(8000)
       });
       if (res.status === 401 || res.status === 403) {
         logout();
@@ -141,7 +142,7 @@ export default function App() {
         localStorage.setItem('user', JSON.stringify(updatedUser));
       }
     } catch (err) {
-      console.error('Failed to refresh user', err);
+      if (!silent) console.error('Failed to refresh user', err);
     }
   };
 

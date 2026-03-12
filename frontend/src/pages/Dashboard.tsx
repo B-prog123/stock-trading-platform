@@ -22,10 +22,15 @@ export default function Dashboard() {
   const fetchPortfolio = useCallback(async (silent = false) => {
     if (!token) return;
     try {
-      const res = await fetch(apiUrl('/api/portfolio'), { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch(apiUrl('/api/portfolio'), { 
+        headers: { Authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(8000)
+      });
       if (res.status === 401 || res.status === 403) { logout(); return; }
       if (res.ok) { setPortfolio(await res.json()); setLastUpdated(new Date()); }
-    } catch (err) { console.error('Portfolio fetch error', err); }
+    } catch (err) { 
+      if (!silent) console.error('Portfolio fetch error', err); 
+    }
   }, [token]);
 
   useEffect(() => {
@@ -40,9 +45,9 @@ export default function Dashboard() {
   }, [token]);
 
   useEffect(() => {
-    const interval = setInterval(() => { refreshUser(); fetchPortfolio(true); }, 8000);
+    const interval = setInterval(() => { refreshUser(true); fetchPortfolio(true); }, 8000);
     return () => clearInterval(interval);
-  }, [fetchPortfolio]);
+  }, [fetchPortfolio, refreshUser]);
 
   const totalHoldingsValue = portfolio.reduce((acc, item) => acc + item.quantity * item.avgPrice, 0);
   const availableBalance = user?.balance ?? 0;
