@@ -4,13 +4,14 @@ import axios from "axios";
 import yahooFinance from 'yahoo-finance2';
 
 try {
-  yahooFinance.suppressNotices(['yahooSurvey']);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (yahooFinance as any).suppressNotices(['yahooSurvey']);
 } catch(e) { /* ignore */ }
 
 // ─── Yahoo Finance Helpers (yahoo-finance2) ───────────────────────────────────
-async function fetchYahooQuote(symbol: string) {
+async function fetchYahooQuote(symbol: string): Promise<any> {
   try {
-    const quote = await yahooFinance.quote(symbol);
+    const quote = await (yahooFinance as any).quote(symbol);
     return quote;
   } catch (err: any) {
     console.warn(`yahoo-finance2 quote fetch failed for ${symbol}:`, err.message);
@@ -25,16 +26,16 @@ async function fetchYahooChart(symbol: string, period1: number, period2: number,
       period2: new Date(period2 * 1000),
       interval: interval
     };
-    const result = await yahooFinance.chart(symbol, queryOptions);
+    const result: any = await (yahooFinance as any).chart(symbol, queryOptions);
     if (!result || !result.quotes || result.quotes.length === 0) return null;
 
-    return result.quotes.map(q => ({
+    return result.quotes.map((q: any) => ({
       date: q.date,
       open: q.open,
       high: q.high,
       low: q.low,
       close: q.close
-    })).filter(d => d.close != null && d.open != null);
+    })).filter((d: any) => d.close != null && d.open != null);
   } catch (err: any) {
     console.warn(`yahoo-finance2 chart fetch failed for ${symbol}:`, err.message);
     return null;
