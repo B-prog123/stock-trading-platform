@@ -1,43 +1,42 @@
 import express from "express";
 import cors from "cors";
 import axios from "axios";
+import yahooFinance from 'yahoo-finance2';
 
-// ─── Yahoo Finance Helpers (Direct Fetch) ───────────────────────────────────
-// We use custom fetchers to avoid issues with library-specific validation/config.
-const YAHOO_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
+try {
+  yahooFinance.suppressNotices(['yahooSurvey']);
+} catch(e) { /* ignore */ }
 
+// ─── Yahoo Finance Helpers (yahoo-finance2) ───────────────────────────────────
 async function fetchYahooQuote(symbol: string) {
   try {
-    const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}`;
-    const res = await axios.get(url, { headers: { "User-Agent": YAHOO_UA } });
-    if (!res.data?.quoteResponse?.result?.[0]) return null;
-    return res.data.quoteResponse.result[0];
-  } catch (err) {
-    console.warn(`Direct quote fetch failed for ${symbol}:`, (err as any).message);
+    const quote = await yahooFinance.quote(symbol);
+    return quote;
+  } catch (err: any) {
+    console.warn(`yahoo-finance2 quote fetch failed for ${symbol}:`, err.message);
     return null;
   }
 }
 
 async function fetchYahooChart(symbol: string, period1: number, period2: number, interval: string) {
   try {
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?period1=${period1}&period2=${period2}&interval=${interval}`;
-    const res = await axios.get(url, { headers: { "User-Agent": YAHOO_UA } });
-    const result = res.data?.chart?.result?.[0];
-    if (!result || !result.timestamp) return null;
+    const queryOptions: any = {
+      period1: new Date(period1 * 1000),
+      period2: new Date(period2 * 1000),
+      interval: interval
+    };
+    const result = await yahooFinance.chart(symbol, queryOptions);
+    if (!result || !result.quotes || result.quotes.length === 0) return null;
 
-    const timestamps = result.timestamp;
-    const quotes = result.indicators.quote[0];
-    const data = timestamps.map((timestamp: number, i: number) => ({
-      date: new Date(timestamp * 1000),
-      open: quotes.open[i],
-      high: quotes.high[i],
-      low: quotes.low[i],
-      close: quotes.close[i],
-    })).filter((d: any) => d.close != null && d.open != null);
-
-    return data;
-  } catch (err) {
-    console.warn(`Direct chart fetch failed for ${symbol}:`, (err as any).message);
+    return result.quotes.map(q => ({
+      date: q.date,
+      open: q.open,
+      high: q.high,
+      low: q.low,
+      close: q.close
+    })).filter(d => d.close != null && d.open != null);
+  } catch (err: any) {
+    console.warn(`yahoo-finance2 chart fetch failed for ${symbol}:`, err.message);
     return null;
   }
 }
@@ -84,14 +83,6 @@ app.use(cors({
 }));
 app.use(express.json());
 
-const fallbackPrices: Record<string, number> = {
-  // US stocks
-  AAPL: 182.63, TSLA: 202.64, NVDA: 726.13, MSFT: 409.72, GOOGL: 147.22, AMZN: 174.42,
-  // Indian NSE stocks (Yahoo Finance uses .NS suffix)
-  "RELIANCE.NS": 2950.25, "TCS.NS": 4120.64, "HDFCBANK.NS": 1450.13,
-  "INFY.NS": 1680.72, "ICICIBANK.NS": 1050.22, "SBIN.NS": 780.42,
-  "WIPRO.NS": 452.10, "ADANIENT.NS": 3100.50, "ITC.NS": 430.15, "LT.NS": 3450.80,
-};
 const toISODate = (date: Date): string => date.toISOString().split("T")[0];
 const parseISODate = (value: string): Date | null => {
   if (!value) return null;
@@ -197,7 +188,7 @@ const getCurrentStockPrice = async (symbol: string): Promise<number> => {
     if (price > 0) return price;
   } catch { /* fall through */ }
 
-  return fallbackPrices[`${safeSymbol}.NS`] || fallbackPrices[safeSymbol] || 100;
+  throw new Error(`Failed to fetch real-time price for ${symbol}`);
 };
 
 type PriceData = { symbol: string; price: number; change: number };
@@ -238,9 +229,8 @@ const getBatchPrices = async (symbols: string[]): Promise<Record<string, { price
           ? parseFloat(((price - prevClose) / prevClose * 100).toFixed(2))
           : parseFloat(((quote?.regularMarketChangePercent ?? 0) * 100).toFixed(2));
         result[sym] = { price, change };
-      } catch {
-        const stripped = sym.replace(/\.NS$/i, "").toUpperCase();
-        result[sym] = { price: fallbackPrices[sym] || fallbackPrices[stripped] || 100, change: 0 };
+      } catch (err: any) {
+        console.warn(`Failed to fetch quote for ${sym}:`, err.message);
       }
     })
   );

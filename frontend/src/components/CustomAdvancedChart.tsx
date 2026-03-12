@@ -105,8 +105,10 @@ const CustomAdvancedChart: React.FC<CustomAdvancedChartProps> = ({ symbol, inter
                 }
             } catch (err: any) {
                 console.error('[Chart] Init Attempt Error:', err);
-                setError(`Init Failed: ${err.message}`);
-                setLoading(false);
+                if (isMounted) {
+                    setError(`Init Failed: ${err.message}`);
+                    setLoading(false);
+                }
             }
         };
 
@@ -177,7 +179,11 @@ const CustomAdvancedChart: React.FC<CustomAdvancedChartProps> = ({ symbol, inter
         return () => {
             isMounted = false;
             resizeObserver.disconnect();
-            if (chart) chart.remove();
+            if (chart) {
+                try {
+                   chart.remove();
+                } catch(e) {}
+            }
         };
     }, [symbol, interval, initChart, retryCount]);
 
