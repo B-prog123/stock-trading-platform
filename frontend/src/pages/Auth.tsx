@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../App';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -72,24 +72,13 @@ export default function Auth() {
         return;
       }
 
-      setInfo('Account created successfully! Signing you in...');
-      setIsLogin(true); // Switch context to Sign In view visually
-
-      // Automatically sign in the user
-      const loginRes = await fetch(apiUrl('/api/auth/login'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      const loginData = await loginRes.json();
-
-      if (loginRes.ok) {
-        // Brief delay so the user can read the success notification
-        setTimeout(() => {
-          login(loginData.token, loginData.user);
-        }, 1200);
+      setInfo('Account created successfully!');
+      
+      // Use the token and user data returned directly from the register call
+      if (data.token && data.user) {
+        login(data.token, data.user);
       } else {
-        setError(loginData?.error || 'Auto-login failed. Please sign in manually.');
+        setError('Registration succeeded but auto-login failed. Please sign in manually.');
         setLoading(false);
       }
     } catch {

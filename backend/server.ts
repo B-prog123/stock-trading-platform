@@ -494,9 +494,18 @@ app.post("/api/auth/register", async (req, res) => {
   const { email, password, name } = req.body;
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await User.create({ email, password: hashedPassword, name });
-    res.status(201).json({ id: String(user._id) });
-  } catch {
+    const user: any = await User.create({ email, password: hashedPassword, name });
+    const token = jwt.sign({ id: String(user._id), email: user.email }, JWT_SECRET);
+    res.status(201).json({ 
+      token, 
+      user: { 
+        id: String(user._id), 
+        email: user.email, 
+        name: user.name, 
+        balance: user.balance 
+      } 
+    });
+  } catch (err) {
     res.status(400).json({ error: "Email already exists" });
   }
 });
@@ -540,14 +549,35 @@ app.get("/api/portfolio", authenticateToken, async (req: any, res) => {
 
 app.get("/api/portfolio/performance", authenticateToken, async (req: any, res) => {
   const rows: any[] = await Portfolio.find({ userId: req.user.id }).lean();
-  const items = await Promise.all(rows.map(async (item) => {
-    const currentPrice = await getCurrentStockPrice(item.symbol);
+  if (rows.length === 0) return res.json({ items: [], totals: { investedValue: 0, currentValue: 0, profitLoss: 0, profitLossPercent: 0 } });
+
+  const symbols = rows.map(r => r.symbol);
+  const prices = await getBatchPrices(symbols);
+
+  const items = rows.map((item) => {
+    const symbolPriceData = prices[item.symbol] || prices[`${item.symbol}.NS`] || { price: item.avgPrice, change: 0 };
+    const currentPrice = symbolPriceData.price;
     const investedValue = item.quantity * item.avgPrice;
     const currentValue = item.quantity * currentPrice;
     const profitLoss = currentValue - investedValue;
-    return { symbol: item.symbol, quantity: item.quantity, avgPrice: item.avgPrice, currentPrice, investedValue, currentValue, profitLoss, profitLossPercent: investedValue > 0 ? (profitLoss / investedValue) * 100 : 0 };
-  }));
-  const totals = items.reduce((acc, i) => ({ investedValue: acc.investedValue + i.investedValue, currentValue: acc.currentValue + i.currentValue, profitLoss: acc.profitLoss + i.profitLoss }), { investedValue: 0, currentValue: 0, profitLoss: 0 });
+    return { 
+      symbol: item.symbol, 
+      quantity: item.quantity, 
+      avgPrice: item.avgPrice, 
+      currentPrice, 
+      investedValue, 
+      currentValue, 
+      profitLoss, 
+      profitLossPercent: investedValue > 0 ? (profitLoss / investedValue) * 100 : 0 
+    };
+  });
+
+  const totals = items.reduce((acc, i) => ({ 
+    investedValue: acc.investedValue + i.investedValue, 
+    currentValue: acc.currentValue + i.currentValue, 
+    profitLoss: acc.profitLoss + i.profitLoss 
+  }), { investedValue: 0, currentValue: 0, profitLoss: 0 });
+
   res.json({ items, totals: { ...totals, profitLossPercent: totals.investedValue > 0 ? (totals.profitLoss / totals.investedValue) * 100 : 0 } });
 });
 
@@ -629,15 +659,29 @@ app.get("/api/sip", authenticateToken, async (req: any, res) => {
 
 app.get("/api/sip/dashboard", authenticateToken, async (req: any, res) => {
   const sips: any[] = await SipOrder.find({ userId: req.user.id }).sort({ createdAt: -1 }).lean();
+  if (sips.length === 0) return res.json({ sips: [], summary: { activeSips: 0, totalInvested: 0, totalShares: 0, profitLoss: 0 } });
+
+  const symbols = sips.map(s => s.stockSymbol);
+  const prices = await getBatchPrices(symbols);
+
   let currentValue = 0;
   for (const sip of sips) {
     if (!sip.totalShares || sip.totalShares <= 0) continue;
-    const price = await getCurrentStockPrice(sip.stockSymbol);
-    currentValue += sip.totalShares * price;
+    const symbolPriceData = prices[sip.stockSymbol] || prices[`${sip.stockSymbol}.NS`] || { price: 0 };
+    currentValue += sip.totalShares * symbolPriceData.price;
   }
+
   const totalInvested = sips.reduce((acc, s: any) => acc + (s.totalInvested || 0), 0);
   const totalShares = sips.reduce((acc, s: any) => acc + (s.totalShares || 0), 0);
-  res.json({ sips: sips.map((s: any) => ({ ...s, id: String(s._id), _id: undefined })), summary: { activeSips: sips.filter((s) => s.status === "ACTIVE").length, totalInvested, totalShares, profitLoss: currentValue - totalInvested } });
+  res.json({ 
+    sips: sips.map((s: any) => ({ ...s, id: String(s._id), _id: undefined })), 
+    summary: { 
+      activeSips: sips.filter((s) => s.status === "ACTIVE").length, 
+      totalInvested, 
+      totalShares, 
+      profitLoss: currentValue - totalInvested 
+    } 
+  });
 });
 
 app.get("/api/sip/:id", authenticateToken, async (req: any, res) => {
