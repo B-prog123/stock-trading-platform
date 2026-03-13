@@ -104,55 +104,12 @@ export default function Portfolio() {
     }
   };
 
-  // ── Periodic Refresh & Jitter ──
+  // ── Periodic Refresh ──
   useEffect(() => {
-    const interval = setInterval(() => {
-      setPerformance(currentPerf => {
-        const nextPerf = { ...currentPerf };
-        let hasChanges = false;
-
-        Object.keys(nextPerf).forEach(symbol => {
-          const item = nextPerf[symbol];
-          // Jitter current price by +/- 0.05%
-          const jitter = (Math.random() - 0.5) * 0.1;
-          const newPrice = item.currentPrice * (1 + jitter / 100);
-          const newCurrentValue = item.quantity * newPrice;
-          const newPnl = newCurrentValue - (item.quantity * item.avgPrice);
-          const newPnlPct = (newPnl / (item.quantity * item.avgPrice)) * 100;
-
-          nextPerf[symbol] = {
-            ...item,
-            currentPrice: parseFloat(newPrice.toFixed(2)),
-            currentValue: parseFloat(newCurrentValue.toFixed(2)),
-            profitLoss: parseFloat(newPnl.toFixed(2)),
-            profitLossPercent: parseFloat(newPnlPct.toFixed(2))
-          };
-          hasChanges = true;
-        });
-
-        if (hasChanges) {
-          // Re-calculate totals
-          const perfValues = Object.values(nextPerf) as PerformanceItem[];
-          const newInvested = perfValues.reduce((acc, curr) => acc + (curr.quantity * curr.avgPrice), 0);
-          const newCurrent = perfValues.reduce((acc, curr) => acc + curr.currentValue, 0);
-          const newPnl = newCurrent - newInvested;
-          const newPnlPct = newInvested > 0 ? (newPnl / newInvested) * 100 : 0;
-
-          setTotals({
-            investedValue: parseFloat(newInvested.toFixed(2)),
-            currentValue: parseFloat(newCurrent.toFixed(2)),
-            profitLoss: parseFloat(newPnl.toFixed(2)),
-            profitLossPercent: parseFloat(newPnlPct.toFixed(2))
-          });
-        }
-
-        return nextPerf;
-      });
-    }, 3000);
-
+    // Only keep the refresh interval for fresh data from backend
     const refreshInterval = setInterval(() => fetchPortfolio(true), 15000); // Fresh data every 15s
-    return () => { clearInterval(interval); clearInterval(refreshInterval); };
-  }, [performance]);
+    return () => clearInterval(refreshInterval);
+  }, [token]);
 
   const analyzePortfolio = async () => {
     setAnalyzing(true);
@@ -216,41 +173,10 @@ export default function Portfolio() {
 
   const divLevel = getDiversificationLevel(diversificationScore);
 
-  const generateTrendData = () => {
-    const data = [];
-    const isProfitable = totals.profitLoss >= 0;
-
-    // We start 30 days ago.
-    // Base value is Invested Value, but we'll create a curve that ends at Current Value
-    let currentDataValue = isProfitable ? totals.investedValue : totals.investedValue + Math.abs(totals.profitLoss) * 2;
-
-    // Target is our real current value
-    const targetValue = totals.currentValue;
-
-    // Roughly distribute the difference over 30 days
-    const totalDiff = targetValue - currentDataValue;
-    const dailyStep = totalDiff / 30;
-
-    for (let i = 30; i >= 0; i--) {
-      // Add some random noise to make it look like a real stock chart
-      const noise = (Math.random() - 0.5) * (totals.investedValue * 0.02);
-
-      // We force the very last day (i === 0) to equal exactly targetValue 
-      if (i === 0) {
-        currentDataValue = targetValue;
-      } else {
-        currentDataValue += dailyStep + noise;
-      }
-
-      data.push({
-        date: format(subDays(new Date(), i), 'MMM dd'),
-        value: Math.max(0, currentDataValue), // Ensure it doesn't drop below 0
-      });
-    }
-    return data;
-  };
-
-  const trendData = generateTrendData();
+  const trendData = [
+    { date: format(subDays(new Date(), 6), 'MMM dd'), value: totals.investedValue },
+    { date: format(subDays(new Date(), 0), 'MMM dd'), value: totals.currentValue },
+  ];
   const isTrendPositive = totals.profitLoss >= 0;
 
   return (

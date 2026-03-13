@@ -61,10 +61,11 @@ const stockMeta: Record<string, StockMeta> = {
 
 function generateOrderBook(basePrice: number, isBuy: boolean): OrderBookEntry[] {
   return Array.from({ length: 5 }).map((_, i) => {
-    // Buyers want lower prices, Sellers want higher prices
     const offset = isBuy ? -((i + 1) * 0.05) : ((i + 1) * 0.05);
     const price = basePrice * (1 + offset / 100);
-    const quantity = Math.floor(Math.random() * 500) + 50;
+    // Quantity is still estimated as order book data isn't directly available for all stocks, 
+    // but we'll use a more stable estimation.
+    const quantity = 100 + (i * 50);
     return {
       price: parseFloat(price.toFixed(2)),
       quantity,
@@ -140,18 +141,17 @@ export default function Market() {
   }, [stocks]);
 
   // Update order book rapidly and track high/low
+  // Day High/Low should ideally come from backend. For now, we'll initialized them with current price.
   useEffect(() => {
-    setDayHigh(selectedStock.price * 1.02);
-    setDayLow(selectedStock.price * 0.98);
+    setDayHigh(prev => Math.max(prev, selectedStock.price));
+    setDayLow(prev => (prev === 0 ? selectedStock.price : Math.min(prev, selectedStock.price)));
     setBids(generateOrderBook(selectedStock.price, true));
     setAsks(generateOrderBook(selectedStock.price, false).reverse());
 
     const obInterval = setInterval(() => {
       setBids(generateOrderBook(selectedStock.price, true));
       setAsks(generateOrderBook(selectedStock.price, false).reverse());
-      setDayHigh(prev => Math.max(prev, selectedStock.price));
-      setDayLow(prev => Math.min(prev, selectedStock.price));
-    }, 2000);
+    }, 5000);
 
     return () => clearInterval(obInterval);
   }, [selectedStock.symbol, selectedStock.price]);

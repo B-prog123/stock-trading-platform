@@ -54,13 +54,8 @@ export default function Dashboard() {
   const totalPortfolioValue = availableBalance + totalHoldingsValue;
 
   const chartData = [
-    { name: 'Mon', value: totalPortfolioValue * 0.93 },
-    { name: 'Tue', value: totalPortfolioValue * 0.95 },
-    { name: 'Wed', value: totalPortfolioValue * 0.94 },
-    { name: 'Thu', value: totalPortfolioValue * 0.97 },
-    { name: 'Fri', value: totalPortfolioValue * 0.99 },
-    { name: 'Sat', value: totalPortfolioValue * 0.98 },
-    { name: 'Sun', value: totalPortfolioValue },
+    { name: 'Invested', value: totalHoldingsValue },
+    { name: 'Current', value: totalPortfolioValue }
   ];
 
   const quickActions = [
@@ -71,13 +66,7 @@ export default function Dashboard() {
     { label: 'Support', desc: 'Get help', icon: <MessageCircle size={20} />, color: 'from-rose-500 to-red-600', tab: 'support' },
   ];
 
-  const [marketMovers, setMarketMovers] = useState([
-    { symbol: 'AAPL', name: 'Apple Inc.', price: 0, change: 0, up: true },
-    { symbol: 'RELIANCE', name: 'Reliance Industries', price: 0, change: 0, up: true },
-    { symbol: 'NVDA', name: 'NVIDIA Corp.', price: 0, change: 0, up: true },
-    { symbol: 'TCS', name: 'Tata Consultancy', price: 0, change: 0, up: true },
-    { symbol: 'TSLA', name: 'Tesla, Inc.', price: 0, change: 0, up: false },
-  ]);
+  const [marketMovers, setMarketMovers] = useState<any[]>([]);
 
   const features = [
     { icon: <Zap size={22} />, title: 'Real-time Prices', desc: 'Live market data updated every few seconds across all instruments.' },
@@ -92,13 +81,22 @@ export default function Dashboard() {
   const { prices } = usePrices();
   useEffect(() => {
     if (Object.keys(prices).length === 0) return;
-    setMarketMovers(current =>
-      current.map(m => {
-        const live = prices[m.symbol];
-        if (!live) return m;
-        return { ...m, price: live.price, change: live.change, up: live.change >= 0 };
-      })
-    );
+    
+    // Derived movers from real prices
+    const movers = Object.entries(prices)
+      .map(([symbol, data]: [string, any]) => ({
+        symbol,
+        change: data.change,
+        price: data.price,
+        name: symbol,
+        up: data.change >= 0
+      }))
+      .sort((a, b) => Math.abs(b.change) - Math.abs(a.change))
+      .slice(0, 5);
+
+    if (movers.length > 0) {
+      setMarketMovers(movers);
+    }
   }, [prices]);
 
   return (
